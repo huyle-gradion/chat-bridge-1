@@ -68,3 +68,4 @@ Every feature implementation must follow strict TDD:
 * **Source of Truth Specification:** `docs/spec.md`
 * **Architecture Decision Records:** `docs/decisions.md` (and `docs/decisions/*.md`)
 * **Agent Guidelines:** `.agents/rules/AGENTS.md`
+
