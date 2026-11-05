@@ -14,7 +14,7 @@ Chat Bridge must provide three operational interfaces sharing a single unified e
 2. **Local Web UI (Feature I-2):** A web-based interface running strictly on `localhost` for setup, chat picking, feeds, and settings.
 3. **CLI (Feature I-1):** A scriptable command-line interface for testers and developers (`chat-bridge status`, `run`, `sink`, etc.) with `--json` output.
 
-The chat connectors—**`baileys`** (WhatsApp) and **`zca-js`** (Zalo)—are Node.js libraries with deep Node runtime dependencies (crypto, WebSockets, streams, file system). Furthermore, the app requires OS-level keystore encryption (**Feature C-3**: macOS Keychain and Windows DPAPI) and system tray/desktop notifications (**Feature C-7**).
+The chat connectors (**`baileys`** (WhatsApp) and **`zca-js`** (Zalo)) are Node.js libraries with deep Node runtime dependencies (crypto, WebSockets, streams, file system). Furthermore, the app requires OS-level keystore encryption (**Feature C-3**: macOS Keychain and Windows DPAPI) and system tray/desktop notifications (**Feature C-7**).
 
 We evaluated three architectural approaches:
 1. **Option 1 (Electron):** Main process executes Node.js engine and connectors; renderer displays local UI.

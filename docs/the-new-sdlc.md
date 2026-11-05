@@ -13,7 +13,7 @@
 | Concept | Definition / Formula | Key Architectural Rule |
 | :--- | :--- | :--- |
 | **The Core Equation** | `Agent = Model + Harness` | The model is ~10% (raw reasoning engine); the harness is ~90% (prompts, tools, sandboxes, hooks, evals). Changing harness alone elevates benchmarks by double digits. |
-| **The Factory Model** | *Developer designs the system that builds software.* | The developer's primary output is not code — it is the specifications, harness, tests, and guardrails that produce and verify code. |
+| **The Factory Model** | *Developer designs the system that builds software.* | The developer's primary output is not code: it is the specifications, harness, tests, and guardrails that produce and verify code. |
 | **Context Engineering** | Static Context vs. Dynamic Context | **Static** (always loaded: `AGENTS.md`, core rules) = high token cost, zero forgetting.<br/>**Dynamic** (loaded on-demand: Skills, RAG, tool output) = low token cost, high scale. |
 | **The Spectrum** | Vibe Coding $\leftrightarrow$ Agentic Engineering | Differentiated not by AI usage, but by **how outputs are verified** (vibe: *"does it seem to work?"*; agentic: automated tests + evals + CI/CD gates). |
 | **Developer Modes** | Conductor vs. Orchestrator | **Conductor:** Synchronous, in-IDE, keystroke/file level.<br/>**Orchestrator:** Asynchronous, multi-agent, goal/repo level, reviews outcomes not keystrokes. |
@@ -198,7 +198,7 @@ flowchart TD
 ## 6. The Factory Model: Building the System that Builds Software
 
 The core thesis of the paper:
-> **"In the factory model, the developer's primary output is not code — it's the system that produces code."**
+> **"In the factory model, the developer's primary output is not code: it's the system that produces code."**
 
 A factory manager does not assemble every widget by hand. They design the assembly line, establish tolerance thresholds, and ensure quality control:
 

@@ -199,7 +199,7 @@ export class ScenarioBuilder {
 
       switch (noiseKind) {
         case 'reaction':
-          noiseText = '❤️';
+          noiseText = '[reaction:heart]';
           break;
         case 'typing':
           noiseText = '[typing...]';

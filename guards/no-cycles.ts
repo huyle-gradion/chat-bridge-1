@@ -156,13 +156,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const result = runNoCyclesGuard();
 
   if (result.hasCycle) {
-    console.error('❌ Circular dependencies detected:');
+    console.error('FAIL: Circular dependencies detected:');
     for (const cycle of result.cycles) {
       console.error('  Cycle:', cycle.map((f) => path.relative(process.cwd(), f)).join(' -> '));
     }
     process.exit(1);
   } else {
-    console.log('✅ Zero circular dependencies detected.');
+    console.log('PASS: Zero circular dependencies detected.');
     process.exit(0);
   }
 }

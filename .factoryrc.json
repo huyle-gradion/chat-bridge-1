@@ -30,7 +30,9 @@
     "plainLanguage": {
       "enabled": true,
       "targetDirs": ["packages/ui", "packages/i18n", "packages/locales"],
-      "forbiddenTerms": ["sink", "outbox", "jid", "regex", "daemon", "payload", "stdout"]
+      "forbiddenTerms": ["sink", "outbox", "jid", "regex", "daemon", "payload", "stdout"],
+      "disallowEmDashes": true,
+      "disallowEmojis": true
     },
     "secrets": {
       "enabled": true

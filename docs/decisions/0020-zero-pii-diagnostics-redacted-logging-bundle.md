@@ -9,7 +9,7 @@
 
 ## 1. Context and Problem Statement
 
-When non-technical sales representatives experience runtime anomalies—such as connector disconnections, OAuth token expirations, HTTP 429 rate pacing, or network timeouts—support engineers require diagnostic telemetry to troubleshoot root causes ([Features C-1, C-9](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L168-L178)).
+When non-technical sales representatives experience runtime anomalies (such as connector disconnections, OAuth token expirations, HTTP 429 rate pacing, or network timeouts), support engineers require diagnostic telemetry to troubleshoot root causes ([Features C-1, C-9](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L168-L178)).
 
 However, chat integration software operates under severe privacy and operational constraints:
 1. **Strict Zero-PII Mandate ([Section 14](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L341-L349)):**  

@@ -20,7 +20,7 @@ Chat Bridge integrates personal Zalo accounts via the unofficial `zca-js` librar
    - Zalo strictly limits each user account to **one active web/browser session**.
    - If the sales representative opens `chat.zalo.me` in Google Chrome while Chat Bridge is running, Zalo's WebSocket servers immediately terminate the `zca-js` session with error code `1001` (Session Conflict / Disconnected by newer session).
    - **The Hazard:** If Chat Bridge treats this as a standard network drop and attempts aggressive automatic reconnection, it enters an infinite ping-pong takeover loop with the rep's browser. Zalo's anti-abuse heuristics will flag the account as an automated bot, resulting in a temporary or permanent account ban.
-2. **Identity Ambiguity — `uidFrom` vs `globalId` ([Section 15](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L360)):**
+2. **Identity Ambiguity: `uidFrom` vs `globalId` ([Section 15](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L360)):**
    - Spec Open Question: *"Is a Zalo user id the same when seen from two different accounts? Also test zca-js globalId."*
    - In Zalo's internal architecture, `uidFrom` is sometimes scoped to the specific user's relationship or conversation session, whereas `globalId` represents the immutable platform-wide user identifier.
 3. **Contact vs Stranger Phone Number Privacy ([Section 15](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L359)):**

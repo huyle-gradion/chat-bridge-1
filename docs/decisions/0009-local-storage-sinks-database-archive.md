@@ -1,4 +1,4 @@
-# ADR 0009: Local Storage Sinks — Dedicated Analytical Database & Daily JSONL Archive
+# ADR 0009: Local Storage Sinks: Dedicated Analytical Database & Daily JSONL Archive
 
 * **Status:** Accepted
 * **Date:** 2026-11-04

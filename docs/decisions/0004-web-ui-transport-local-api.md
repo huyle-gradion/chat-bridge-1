@@ -1,4 +1,4 @@
-# ADR 0004: Web UI Transport & Local API Protocol — Embedded HTTP with Server-Sent Events
+# ADR 0004: Web UI Transport & Local API Protocol: Embedded HTTP with Server-Sent Events
 
 * **Status:** Accepted
 * **Date:** 2026-11-04

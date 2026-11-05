@@ -103,11 +103,11 @@ In compliance with the spec requirement (*"Send is off by default and asks every
 
 | Evaluation Dimension | Option 1 (In-Daemon HTTP/SSE) | Option 2: CLI `stdio` over Read-Replica (Accepted) | Option 3 (Embedded UI Chatbot) |
 | :--- | :--- | :--- | :--- |
-| **Client Ecosystem Fit** | ⚠️ Complex SSE configuration for Claude/Cursor |  Native standard `stdio` configuration | ❌ Proprietary chat widget |
-| **Privacy & Zero-Leakage** | ⚠️ Could leak live outbox queue state |  Reads only filtered, delivered analytical data | ⚠️ Exposes internal UI state |
-| **Anti-Spam Safety** | ⚠️ Autonomous HTTP dispatch risk |  Zero-autonomous send; enforced human click gate (ADR 0014) |  Manual, but high UI complexity |
-| **System Resource Impact** | ⚠️ Permanent memory & port listener |  0 MB idle; ephemeral CLI subprocess lifecycle | ❌ Bloats frontend bundle size |
-| **Database Concurrency** | ⚠️ Potential event loop latency |  SQLite WAL zero-lock concurrent read | ⚠️ Competes on frontend thread |
+| **Client Ecosystem Fit** | Complex SSE configuration for Claude/Cursor | Native standard `stdio` configuration | Proprietary chat widget |
+| **Privacy & Zero-Leakage** | Could leak live outbox queue state | Reads only filtered, delivered analytical data | Exposes internal UI state |
+| **Anti-Spam Safety** | Autonomous HTTP dispatch risk | Zero-autonomous send; enforced human click gate (ADR 0014) | Manual, but high UI complexity |
+| **System Resource Impact** | Permanent memory & port listener | 0 MB idle; ephemeral CLI subprocess lifecycle | Bloats frontend bundle size |
+| **Database Concurrency** | Potential event loop latency | SQLite WAL zero-lock concurrent read | Competes on frontend thread |
 
 ---
 

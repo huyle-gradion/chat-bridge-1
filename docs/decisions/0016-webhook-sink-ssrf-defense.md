@@ -12,7 +12,7 @@
 Sections 3 and 7 of `docs/spec.md` define the Webhook Sink as part of the "Should" scope:
 1. **Feature K-2 Definition ([Section 7](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L215)):** *"Sends signed batches of messages as JSON to a URL the rep gives."*
 2. **Sink Contract Alignment ([Section 6](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L149-L158)):** The Webhook provider must implement `SinkContract` (`configure(settings)`, `test()`, `deliver(batch)`, `health()`, and declare rate/batch `limits`).
-3. **The Security Threat — Server-Side Request Forgery (SSRF) and DNS Rebinding:**
+3. **The Security Threat - Server-Side Request Forgery (SSRF) and DNS Rebinding:**
    - Chat Bridge runs locally on the user's desktop computer within corporate or residential intranets.
    - Allowing users to enter an arbitrary HTTP target URL opens critical vulnerabilities if not guarded:
      - **Private Intranet Probing:** Accessing RFC 1918 private networks (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), local router admin portals (`http://192.168.1.1`), or local microservices.
@@ -140,11 +140,11 @@ The webhook delivers messages matching the normalized shape defined in `docs/spe
 
 | Dimension | Option 1: Naive HTTP Client | Option 2: Zero-Trust IP Pinning & HMAC (Accepted) | Option 3: External Cloud Relay |
 | :--- | :--- | :--- | :--- |
-| **SSRF Defense** | ❌ Vulnerable to TOCTOU rebinding & internal network access |  Deterministic block at socket connection level; zero bypass |  Protected from internal LAN, but introduces relay target abuse |
-| **Privacy & Zero-Cloud Invariant** |  Direct from desktop |  Direct from desktop; zero third-party intermediaries | ❌ Payload traverses external third-party infrastructure |
-| **Payload Integrity & Authentication** | ⚠️ Unsigned or basic auth only |  HMAC-SHA256 with timestamp replay prevention |  Depends on relay-to-target auth |
-| **Deployment Complexity** |  Zero configuration |  Zero extra npm packages (built-in Node `https`, `crypto`, `dns`) | ❌ Requires hosting, managing, and securing a cloud relay service |
-| **Plain-Language UX** | ⚠️ Raw networking errors |  Instant, human-friendly errors ("Address not allowed") | ⚠️ Confusing proxy relay errors |
+| **SSRF Defense** | Vulnerable to TOCTOU rebinding & internal network access | Deterministic block at socket connection level; zero bypass | Protected from internal LAN, but introduces relay target abuse |
+| **Privacy & Zero-Cloud Invariant** | Direct from desktop | Direct from desktop; zero third-party intermediaries | Payload traverses external third-party infrastructure |
+| **Payload Integrity & Authentication** | Unsigned or basic auth only | HMAC-SHA256 with timestamp replay prevention | Depends on relay-to-target auth |
+| **Deployment Complexity** | Zero configuration | Zero extra npm packages (built-in Node `https`, `crypto`, `dns`) | Requires hosting, managing, and securing a cloud relay service |
+| **Plain-Language UX** | Raw networking errors | Instant, human-friendly errors ("Address not allowed") | Confusing proxy relay errors |
 
 ---
 

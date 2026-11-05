@@ -1,4 +1,4 @@
-# Chat Bridge — Agent Guidelines & Project Rules
+# Chat Bridge: Agent Guidelines & Project Rules
 
 This document defines the development rules, architectural contracts, and context hygiene standards for the **Chat Bridge** project.
 
@@ -49,6 +49,7 @@ The system consists of three strictly decoupled components:
   - Zero dead code or unused exports.
   - No commented-out code.
   - No `TODO` comments without an associated issue tracker link.
+  - Zero icons, emojis, or em dashes in CLI output, UI text, code comments, documentation, and agent communication.
 * **User-Facing Plain Language (UX Guard):**
   - Never expose internal jargon to the user on UI screens or error dialogs (no *"sink"*, *"outbox"*, *"JID"*, or *"regex"*).
   - Use plain English: e.g., *"Where to send"* instead of *"Sink"*, *"Waiting messages"* instead of *"Outbox queue"*.

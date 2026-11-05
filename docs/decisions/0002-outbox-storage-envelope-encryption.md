@@ -1,4 +1,4 @@
-# ADR 0002: Outbox Storage & Encryption — Standard SQLite with Envelope Encryption
+# ADR 0002: Outbox Storage & Encryption: Standard SQLite with Envelope Encryption
 
 * **Status:** Accepted
 * **Date:** 2026-11-04

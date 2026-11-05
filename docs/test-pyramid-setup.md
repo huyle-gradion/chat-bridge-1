@@ -1,4 +1,4 @@
-# Chat Bridge — Test Pyramid & Multi-Tier Harness Setup Checklist
+# Chat Bridge: Test Pyramid & Multi-Tier Harness Setup Checklist
 
 **Document Version:** 1.0  
 **Target Milestone:** Sprint 0 / Harness Engineering Foundation  

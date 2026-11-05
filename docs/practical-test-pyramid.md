@@ -82,7 +82,7 @@ flowchart TD
 
 Software has outgrown its early sole purpose of automating back-office processes; modern businesses rely on digital software as their primary competitive differentiator. Rapid iteration requires continuous delivery: the ability to reliably release software into production at any given moment.
 
-Manual testing—deploying an application to a staging environment, clicking buttons, and checking database records by hand—collapses under modern release frequencies. As software scales, manual testing either consumes all engineering capacity or leads to catastrophic production regressions.
+Manual testing (deploying an application to a staging environment, clicking buttons, and checking database records by hand) collapses under modern release frequencies. As software scales, manual testing either consumes all engineering capacity or leads to catastrophic production regressions.
 
 Automation across build, test, and deployment pipelines is the only scalable solution:
 
@@ -638,7 +638,7 @@ Computers cannot inherently evaluate whether an interface "looks good," but they
 
 ## 8. End-to-End Tests: The Broad Stack Safety Net
 
-End-to-End (E2E) tests—also called **Broad Stack Tests**—run against a fully deployed, integrated system. They simulate authentic user journeys from the frontend interface down to persistent storage.
+End-to-End (E2E) tests (also called **Broad Stack Tests**) run against a fully deployed, integrated system. They simulate authentic user journeys from the frontend interface down to persistent storage.
 
 ```mermaid
 flowchart TD
@@ -840,7 +840,7 @@ flowchart LR
     Stage1 --> Stage2 --> Stage3
 ```
 
-- **Fail-Fast Principle:** If a developer breaks a simple unit invariant, feedback must arrive within seconds—not 45 minutes later after an E2E cluster spins up.
+- **Fail-Fast Principle:** If a developer breaks a simple unit invariant, feedback must arrive within seconds, not 45 minutes later after an E2E cluster spins up.
 - **Pragmatic Stage Inclusion:** Fast-running integration tests (e.g. testing an in-memory repository) belong in Stage 1 alongside unit tests because their execution duration is negligible.
 
 ---

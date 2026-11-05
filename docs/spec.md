@@ -1,7 +1,7 @@
-# Chat Bridge — Product Specification
+# Chat Bridge: Product Specification
 
 **Owner:** Tam Vu (stakeholder) · **Version:** 0.5, 1 Nov 2026
-**Based on:** [*Chat Bridge PoC — Zalo & WhatsApp into Margince*](./Approved-Proposal-Chat%20Bridge%20PoC%20—%20Zalo%20&%20WhatsApp%20into%20Margince.md), **approved by the Margince team** as the scope of work.
+**Based on:** [*Chat Bridge PoC: Zalo & WhatsApp into Margince*](./Approved-Proposal-Chat%20Bridge%20PoC%20-%20Zalo%20&%20WhatsApp%20into%20Margince.md), **approved by the Margince team** as the scope of work.
 **Stakeholder and spec owner:** Tam Vu (also builds the Margince openchannel PR) · **Beta tester:** Charlotte Nguyen
 
 This is the **source of truth** for the Month 2 product.

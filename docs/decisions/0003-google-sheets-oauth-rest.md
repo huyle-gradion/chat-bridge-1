@@ -1,4 +1,4 @@
-# ADR 0003: Google Sheets Sink — Native Desktop OAuth 2.0 & REST API v4
+# ADR 0003: Google Sheets Sink: Native Desktop OAuth 2.0 & REST API v4
 
 * **Status:** Accepted
 * **Date:** 2026-11-04

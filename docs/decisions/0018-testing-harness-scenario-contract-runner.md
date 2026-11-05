@@ -110,11 +110,11 @@ Located in `packages/testing/src/e2e/`:
 
 | Evaluation Dimension | Option 1: Ad-hoc Vitest Mocks | Option 2: Unified Testing Framework (Accepted) | Option 3: Docker-Compose Harness |
 | :--- | :--- | :--- | :--- |
-| **Execution Velocity (TDD Inner Loop)** |  Fast (<1s), but brittle |  Sub-second Vitest runs; instant feedback | ❌ Slow (>30s container boot overhead) |
-| **Contract Parity (Mock vs Real)** | ❌ Fragile drift across mocks |  Shared parameterized suites enforce 100% contract parity |  Good, but heavy maintenance |
-| **Zero-PII & Privacy Security** | ⚠️ Risk of dev data leakage |  Guaranteed: 100% synthetic, deterministic data |  Good |
-| **Crash & Fault Simulation** | ❌ Cannot simulate OS crashes cleanly |  Programmatic WAL crash & restart assertion | ⚠️ Requires container kill orchestration |
-| **Offline CI Execution** |  Fully offline |  100% hermetic & offline; zero network dependencies | ❌ Docker daemon required |
+| **Execution Velocity (TDD Inner Loop)** | Fast (<1s), but brittle | Sub-second Vitest runs; instant feedback | Slow (>30s container boot overhead) |
+| **Contract Parity (Mock vs Real)** | Fragile drift across mocks | Shared parameterized suites enforce 100% contract parity | Good, but heavy maintenance |
+| **Zero-PII & Privacy Security** | Risk of dev data leakage | Guaranteed: 100% synthetic, deterministic data | Good |
+| **Crash & Fault Simulation** | Cannot simulate OS crashes cleanly | Programmatic WAL crash & restart assertion | Requires container kill orchestration |
+| **Offline CI Execution** | Fully offline | 100% hermetic & offline; zero network dependencies | Docker daemon required |
 
 ---
 

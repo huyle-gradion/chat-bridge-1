@@ -119,7 +119,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const result = scanForSecretsAndPii();
 
   if (!result.passed) {
-    console.error('❌ Leaked secrets or customer PII detected:');
+    console.error('FAIL: Leaked secrets or customer PII detected:');
     for (const v of result.violations) {
       console.error(`  ${v.file}:${v.line} [${v.type}]`);
       console.error(`    Found: "${v.matchedText}"`);
@@ -127,7 +127,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     }
     process.exit(1);
   } else {
-    console.log('✅ Zero secrets or PII detected. Privacy sandbox preserved.');
+    console.log('PASS: Zero secrets or PII detected. Privacy sandbox preserved.');
     process.exit(0);
   }
 }

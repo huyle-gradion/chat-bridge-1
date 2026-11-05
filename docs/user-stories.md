@@ -1,4 +1,4 @@
-# Chat Bridge — Product User Story Catalog
+# Chat Bridge: Product User Story Catalog
 
 **Document Version:** 1.2  
 **Target Release:** Month 2 Beta (Demo: Fri 13 Nov 2026, Acceptance: Fri 27 Nov 2026)  
@@ -16,17 +16,17 @@ Chat Bridge connects personal WhatsApp and Zalo chats to Margince CRM, Google Sh
 
 ### Key Personas
 
-1. **Charlotte (Primary Persona — Non-Technical Sales Rep):**
+1. **Charlotte (Primary Persona: Non-Technical Sales Rep):**
    - _Profile:_ Uses her personal phone and laptop to chat with customers across Zalo and WhatsApp.
    - _Needs:_ Seamless CRM synchronization without manual copy-paste; zero technical friction (under 15-minute solo setup); absolute privacy guarantees that personal/family chats never leave her computer.
    - _Guardrail:_ Never encounters technical jargon (no words like _"sink"_, _"outbox"_, _"JID"_, _"daemon"_, or _"regex"_). Every error clearly explains what happened and states the exact next click to fix it.
 
-2. **Marcus (Secondary Persona — Operations Lead & Technical Power User):**
+2. **Marcus (Secondary Persona: Operations Lead & Technical Power User):**
    - _Profile:_ Manages team sales reporting, pipeline analytics, and destination integrations.
    - _Needs:_ Multi-destination fan-out (Google Sheets, local analytical SQLite database, custom webhooks, MCP server) where one failing destination never stalls or drops messages for others.
    - _Guardrail:_ Requires data freshness, schema stability, spreadsheet automation, and SQL access without degrading Charlotte's laptop performance.
 
-3. **Dylan (Internal Persona — Software Engineer / Intern):**
+3. **Dylan (Internal Persona: Software Engineer / Intern):**
    - _Profile:_ Engineering intern building and verifying Chat Bridge features through strict TDD.
    - _Needs:_ 100% CLI feature parity with `--json` outputs, scriptable headless execution, and deterministic simulation via a fake source and mock Margince server.
    - _Guardrail:_ Develops against fake fixtures and local mocks only; never handles real chat logins, passwords, or customer PII.
@@ -85,7 +85,7 @@ flowchart TD
 
 ### 2. Sprint Execution & Story Dependency Backlog
 
-#### Sprint 1 — Core Pipeline & Joint Live Demo (Target: Fri 13 Nov 2026)
+#### Sprint 1: Core Pipeline & Joint Live Demo (Target: Fri 13 Nov 2026)
 
 _Goal: Prove end-to-end message flow from fake/real sources through encrypted outbox into Margince CRM and verify zero data leaks._
 
@@ -109,7 +109,7 @@ _Goal: Prove end-to-end message flow from fake/real sources through encrypted ou
 | **`US-K0-01`** | Epic 4 | `K-0`   | Multi-Destination Fan-Out Pipeline       | Must     | `US-C3-01`                              |
 | **`US-K4-01`** | Epic 4 | `K-4`   | Margince CRM Signed Push Delivery        | Must     | `US-S1-01`, `US-C3-01`                  |
 
-#### Sprint 2 — Full Polish, Secondary Sinks & Final Acceptance (Target: Fri 27 Nov 2026)
+#### Sprint 2: Full Polish, Secondary Sinks & Final Acceptance (Target: Fri 27 Nov 2026)
 
 _Goal: Complete Charlotte's guided onboarding wizard, secondary fan-out destinations, backfill, and pass all Section 13 acceptance gates._
 
@@ -125,7 +125,7 @@ _Goal: Complete Charlotte's guided onboarding wizard, secondary fan-out destinat
 | **`US-C1-01`** | Epic 8 | `C-1`   | Real-Time Plain-Language System Status      | Must     | `US-C3-01`, `US-K0-01`                                                 |
 | **`US-C9-01`** | Epic 8 | `C-9`   | Low-Overhead Resource & Health Telemetry    | Must     | `US-C3-01`                                                             |
 
-#### Sprint 3 — Post-Acceptance / "Should" Scope
+#### Sprint 3: Post-Acceptance / "Should" Scope
 
 _Goal: Deliver high-value extensions including inbound CRM replies, local desktop AI integrations, bilingual interface, and webhooks._
 
@@ -148,7 +148,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `S-1` / `Section 8` | **Priority:** Must
 - **User Persona:** Dylan (Software Engineer)
 - **Dependencies:** None (Foundational Testing Root)
-- **Technical Reference:** [Factory Model Setup — Phases 3 & 4](factory-model-setup.md#phase-3-synthetic-testing-harness--scenario-engine)
+- **Technical Reference:** [Factory Model Setup: Phases 3 & 4](factory-model-setup.md#phase-3-synthetic-testing-harness--scenario-engine)
 - **User Story:**
   > As a software engineer (Dylan) building Chat Bridge features,  
   > I want fully deterministic chat replay sources and offline protocol test doubles,  
@@ -383,7 +383,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
     - **When** the engine normalization stage runs,
     - **Then** the event is silently discarded with zero disk writes to the outbox.
   - **Scenario 2: Reactions and typing events**
-    - **Given** a user reacts with an emoji (e.g., 👍) or starts typing,
+    - **Given** a user reacts with an emoji (e.g., thumbs-up reaction) or starts typing,
     - **When** the event is received,
     - **Then** it is acknowledged at the protocol layer to keep the connection alive but dropped before reaching the feed or outbox.
 

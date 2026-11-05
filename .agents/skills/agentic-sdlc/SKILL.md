@@ -19,7 +19,7 @@ Full whitepaper reference: [`docs/the-new-sdlc.md`](../../docs/the-new-sdlc.md)
    * Most agent failures are **harness configuration failures**, not model failures.
 
 2. **The Factory Model:**
-   * **The developer's primary output is NOT code — it is the system that produces code.**
+   * **The developer's primary output is NOT code: it is the system that produces code.**
    * A developer designs specifications, guardrails, and quality gates; the agents implement the code; automated tests and evals verify the output.
 
 3. **Verification Differentiates the Spectrum:**

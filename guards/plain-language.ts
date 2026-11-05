@@ -91,7 +91,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const result = scanPlainLanguage();
 
   if (!result.passed) {
-    console.error('❌ Banned technical jargon detected in user-facing UI:');
+    console.error('FAIL: Banned technical jargon detected in user-facing UI:');
     for (const v of result.violations) {
       console.error(`  ${v.file}:${v.line} [Flagged: "${v.word}"]`);
       console.error(`    Line: ${v.matchedText}`);
@@ -99,7 +99,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     }
     process.exit(1);
   } else {
-    console.log('✅ User-facing plain-language guard passed. Zero internal jargon in UI.');
+    console.log('PASS: User-facing plain-language guard passed. Zero internal jargon in UI.');
     process.exit(0);
   }
 }

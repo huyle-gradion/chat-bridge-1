@@ -1,4 +1,4 @@
-# Chat Bridge — Factory Model & Harness Engineering Setup Checklist
+# Chat Bridge: Factory Model & Harness Engineering Setup Checklist
 
 **Document Version:** 1.0  
 **Target Milestone:** Sprint 0 / Foundation Setup (Pre-Sprint 1 Enablement)  
@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-Per the **Factory Model** framework ([`docs/the-new-sdlc.md`](the-new-sdlc.md#6-the-factory-model-building-the-system-that-builds-software)), our primary engineering output is not raw code—it is the **system that produces and verifies code**:
+Per the **Factory Model** framework ([`docs/the-new-sdlc.md`](the-new-sdlc.md#6-the-factory-model-building-the-system-that-builds-software)), our primary engineering output is not raw code: it is the **system that produces and verifies code**:
 
 $$\mathbf{Agent = Model + Harness}$$
 
@@ -249,7 +249,7 @@ flowchart TD
   2. Architectural requirements from related ADRs (e.g., [`docs/decisions/0018-testing-harness-scenario-contract-runner.md`](decisions/0018-testing-harness-scenario-contract-runner.md)).
   3. Boundary and privacy invariants from [`.agents/rules/AGENTS.md`](../.agents/rules/AGENTS.md).
 
-#### Step 2: Red Phase — Test First (Agent Autonomy)
+#### Step 2: Red Phase: Test First (Agent Autonomy)
 * The agent authors unit or contract tests under `packages/<package>/tests/` matching the Gherkin `Given / When / Then` assertions.
 * Uses only synthetic test data (`ScenarioBuilder`, `FakeSource`, `MockMarginceServer`). Never live credentials or real phone numbers.
 * Runs the test command (e.g. `pnpm --filter @chat-bridge/<pkg> test`).

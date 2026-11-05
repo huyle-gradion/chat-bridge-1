@@ -49,17 +49,17 @@ Inspect document structure using targeted scripts (grepping headings, tables, re
 * Catalog tables, figures, formulas, and citations.
 * Map theoretical concepts to concrete project components.
 
-### Step 3: Author Tier 1 — Comprehensive Reference (`docs/<topic>.md`)
+### Step 3: Author Tier 1: Comprehensive Reference (`docs/<topic>.md`)
 * Build structured markdown with table of contents, executive summary, and deep-dive chapters.
 * Transcribe tables into Markdown syntax.
 * Re-implement all figures as Mermaid flowcharts (`flowchart TD` or `flowchart LR`).
 * Document all references and endnotes.
 
-### Step 4: Author Tier 2 — Dynamic Agent Skill (`.agents/skills/<name>/SKILL.md`)
+### Step 4: Author Tier 2: Dynamic Agent Skill (`.agents/skills/<name>/SKILL.md`)
 * Extract operational rules, mental models, and decision heuristics into frontmatter-enabled `SKILL.md`.
 * Ensure progressive disclosure: provide actionable summaries with relative links back to the Tier 1 reference for deep dives.
 
-### Step 5: Author Tier 3 — Actionable Engineering Checklist (`docs/<topic>-setup.md`)
+### Step 5: Author Tier 3: Actionable Engineering Checklist (`docs/<topic>-setup.md`)
 * Ground the theoretical principles into concrete project phases:
   - Toolchain & workspace configuration.
   - Deterministic AST linters and guardrails.

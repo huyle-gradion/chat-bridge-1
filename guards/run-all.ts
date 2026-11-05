@@ -5,9 +5,9 @@ import { scanPlainLanguage } from './plain-language.js';
 import { scanForSecretsAndPii } from './secret-scan.js';
 
 async function main() {
-  console.log('═══════════════════════════════════════════════════════');
-  console.log(' 🛡️  Chat Bridge Architectural & Quality Guard Suite   ');
-  console.log('═══════════════════════════════════════════════════════\n');
+  console.log('=======================================================');
+  console.log(' Chat Bridge Architectural & Quality Guard Suite       ');
+  console.log('=======================================================\n');
 
   let hasError = false;
 
@@ -16,12 +16,12 @@ async function main() {
   const cycleResult = runNoCyclesGuard();
   if (cycleResult.hasCycle) {
     hasError = true;
-    console.error('   ❌ Circular dependencies detected:');
+    console.error('   FAIL: Circular dependencies detected:');
     for (const cycle of cycleResult.cycles) {
       console.error('     ' + cycle.map((f) => path.relative(process.cwd(), f)).join(' -> '));
     }
   } else {
-    console.log('   ✅ PASS: Zero circular dependencies.');
+    console.log('   PASS: Zero circular dependencies.');
   }
 
   // 2. Contract Boundary & Engine Isolation Guard
@@ -29,13 +29,13 @@ async function main() {
   const boundaryResult = checkContractBoundaries();
   if (!boundaryResult.passed) {
     hasError = true;
-    console.error('   ❌ Contract boundary violations:');
+    console.error('   FAIL: Contract boundary violations:');
     for (const v of boundaryResult.violations) {
       console.error(`     [${v.rule}] ${v.file}: imported "${v.importedSpecifier}"`);
       console.error(`     Remediation: ${v.explanation}`);
     }
   } else {
-    console.log('   ✅ PASS: Engine, sources, sinks, and types are cleanly decoupled.');
+    console.log('   PASS: Engine, sources, sinks, and types are cleanly decoupled.');
   }
 
   // 3. Plain Language UI Linter
@@ -43,12 +43,12 @@ async function main() {
   const languageResult = scanPlainLanguage();
   if (!languageResult.passed) {
     hasError = true;
-    console.error('   ❌ Banned jargon terms detected in UI:');
+    console.error('   FAIL: Banned jargon terms detected in UI:');
     for (const v of languageResult.violations) {
       console.error(`     ${v.file}:${v.line} -> "${v.word}" (Use: ${v.recommendedAlternative})`);
     }
   } else {
-    console.log('   ✅ PASS: Zero internal jargon in user-facing UI.');
+    console.log('   PASS: Zero internal jargon in user-facing UI.');
   }
 
   // 4. Secret & Zero-PII Sanitization Guard
@@ -56,22 +56,22 @@ async function main() {
   const secretResult = scanForSecretsAndPii();
   if (!secretResult.passed) {
     hasError = true;
-    console.error('   ❌ Secrets or real PII detected:');
+    console.error('   FAIL: Secrets or real PII detected:');
     for (const v of secretResult.violations) {
       console.error(`     ${v.file}:${v.line} [${v.type}]: "${v.matchedText}"`);
     }
   } else {
-    console.log('   ✅ PASS: Zero secrets and zero PII.');
+    console.log('   PASS: Zero secrets and zero PII.');
   }
 
-  console.log('\n═══════════════════════════════════════════════════════');
+  console.log('\n=======================================================');
   if (hasError) {
-    console.error(' ❌ GUARD CHECK FAILED: Please fix violations above. ');
-    console.error('═══════════════════════════════════════════════════════\n');
+    console.error(' FAILED: Guard checks failed. Please fix violations above. ');
+    console.error('=======================================================\n');
     process.exit(1);
   } else {
-    console.log(' ✅ ALL ARCHITECTURAL GUARDS PASSED. READY FOR COMMITS. ');
-    console.log('═══════════════════════════════════════════════════════\n');
+    console.log(' SUCCESS: All architectural guards passed. ');
+    console.log('=======================================================\n');
     process.exit(0);
   }
 }

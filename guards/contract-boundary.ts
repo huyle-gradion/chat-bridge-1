@@ -110,7 +110,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const result = checkContractBoundaries();
 
   if (!result.passed) {
-    console.error('❌ Contract boundary violations found:');
+    console.error('FAIL: Contract boundary violations found:');
     for (const v of result.violations) {
       console.error(`  [${v.rule}] ${v.file}`);
       console.error(`    Imported: "${v.importedSpecifier}"`);
@@ -118,7 +118,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     }
     process.exit(1);
   } else {
-    console.log('✅ Contract boundaries strictly preserved: Engine, Sources, Sinks, and Types are decoupled.');
+    console.log('PASS: Contract boundaries strictly preserved: Engine, Sources, Sinks, and Types are decoupled.');
     process.exit(0);
   }
 }
