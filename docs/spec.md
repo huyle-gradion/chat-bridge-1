@@ -231,14 +231,16 @@ So the rep needs no public address and no tunnel, and it works behind any home r
 
 | Call | Address | Body | Answer |
 | --- | --- | --- | --- |
-| Push | `POST /webhooks/ext/openchannel/receive/{ref}` | A list of messages (section 5) | One result per message |
+| Push | `POST /webhooks/ext/openchannel/receive/{ref}` | A message arrival (section 5 and ADR 0008) | 202 Accepted (queued); 401 Unauthorized (refusal); 429 Too Many Requests |
 | Pull | `POST /webhooks/ext/openchannel/pull/{ref}` | How many replies you want | The waiting replies: delivery id, network, thread, recipient, text |
 | Ack | `POST /webhooks/ext/openchannel/ack/{ref}` | Delivery id + `sent` or `failed` (with reason) | Recorded |
 
-**Signature:** HMAC-SHA256 over a scope string, the slug, the ref, the time, a one-time number (nonce) and the body.
+**Headers:** `X-Margince-Timestamp` (unix seconds), `X-Margince-Nonce` (hex string), `X-Margince-Signature` (`sha256=<hex>`).
+
+**Signature:** HMAC-SHA256 over scope `margince-inbound-v1`, slug `receive`, ref, time, hex nonce and the raw body bytes, separated by newlines.
 Each address has its own slug, so a push signature cannot be reused as a pull.
 
-**Margince limits:** 60 requests/minute per IP · 120 per endpoint · 1,000 waiting per endpoint · 32,768 characters per text · 50 people per group.
+**Margince limits:** 60 requests/minute per IP, 120 per endpoint, 1,000 waiting per endpoint (exceeding triggers 429), 32,768 characters per text, 50 people per group.
 
 **Contract with Tam's PR:** the envelope is published in the Chat Bridge repo (`docs/protocol.md`) as the bridge's own protocol.
 The mock Margince server and the real one must pass the **same contract tests**. Any change to the envelope is agreed with Tam first and logged as a decision.

@@ -1,6 +1,10 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
-import type { Message, DeliveryOutcome } from '@chat-bridge/types';
+import type {
+  Message,
+  DeliveryOutcome,
+  MarginceInboundArrival,
+} from '@chat-bridge/types';
 
 export interface MarginceServerOptions {
   sharedSecret?: string | undefined;
@@ -14,6 +18,7 @@ export interface ReceivedRequest {
   nonce: string;
   signature: string;
   messages: Message[];
+  arrival?: MarginceInboundArrival | undefined;
 }
 
 export interface MockResponse {
@@ -30,6 +35,7 @@ export class MockMarginceServer {
 
   // In-memory state
   private receivedMessages: Message[] = [];
+  private receivedArrivals: MarginceInboundArrival[] = [];
   private receivedRequests: ReceivedRequest[] = [];
   private seenNonces = new Set<string>();
   private messageIdsSeen = new Set<string>();
@@ -105,6 +111,10 @@ export class MockMarginceServer {
     return [...this.receivedMessages];
   }
 
+  public getReceivedArrivals(): MarginceInboundArrival[] {
+    return [...this.receivedArrivals];
+  }
+
   public getReceivedRequests(): ReceivedRequest[] {
     return [...this.receivedRequests];
   }
@@ -121,6 +131,7 @@ export class MockMarginceServer {
 
   public reset(): void {
     this.receivedMessages = [];
+    this.receivedArrivals = [];
     this.receivedRequests = [];
     this.seenNonces.clear();
     this.messageIdsSeen.clear();
@@ -165,7 +176,8 @@ export class MockMarginceServer {
   }
 
   /**
-   * Core request processor enforcing HMAC-SHA256, anti-replay, and message ingestion.
+   * Core request processor enforcing Margince OpenChannel HMAC-SHA256,
+   * anti-replay, and arrival ingestion.
    */
   public async processRequest(
     method: string,
@@ -194,10 +206,11 @@ export class MockMarginceServer {
 
     const requestRef = pathname.slice(expectedPathPrefix.length);
     if (requestRef !== this.ref) {
+      // Margince returns opaque 401 with empty body on unknown or unaccepted ref
       return {
         status: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Invalid Endpoint Reference' }),
+        headers: {},
+        body: '',
       };
     }
 
@@ -223,10 +236,16 @@ export class MockMarginceServer {
       };
     }
 
-    // Validate Headers (ADR 0008)
-    const tsHeader = headers['x-bridge-timestamp'];
-    const nonceHeader = headers['x-bridge-nonce'];
-    const sigHeader = headers['x-bridge-signature'];
+    // Determine mode: Canonical Margince vs Legacy Bridge
+    const hasMarginceHeaders = Boolean(
+      headers['x-margince-timestamp'] ||
+      headers['x-margince-nonce'] ||
+      headers['x-margince-signature']
+    );
+
+    const tsHeader = headers['x-margince-timestamp'] ?? headers['x-bridge-timestamp'];
+    const nonceHeader = headers['x-margince-nonce'] ?? headers['x-bridge-nonce'];
+    const sigHeader = headers['x-margince-signature'] ?? headers['x-bridge-signature'];
 
     if (!tsHeader || !nonceHeader || !sigHeader) {
       return {
@@ -236,52 +255,98 @@ export class MockMarginceServer {
       };
     }
 
+    // Grammar check for nonce
+    const nonceRegex = hasMarginceHeaders ? /^[0-9a-fA-F]+$/ : /^[0-9a-fA-F-]+$/;
+    if (!nonceRegex.test(nonceHeader) || nonceHeader.length > 64) {
+      return {
+        status: hasMarginceHeaders ? 401 : 400,
+        headers: hasMarginceHeaders ? {} : { 'Content-Type': 'application/json' },
+        body: hasMarginceHeaders ? '' : JSON.stringify({ error: 'Invalid nonce format' }),
+      };
+    }
+
     const ts = parseInt(tsHeader, 10);
+    if (Number.isNaN(ts)) {
+      return {
+        status: hasMarginceHeaders ? 401 : 400,
+        headers: hasMarginceHeaders ? {} : { 'Content-Type': 'application/json' },
+        body: hasMarginceHeaders ? '' : JSON.stringify({ error: 'Invalid timestamp format' }),
+      };
+    }
+
     const nonce = nonceHeader;
     const signature = sigHeader;
 
-    // 1. Anti-Replay Timestamp Tolerance: 5 minutes (300 seconds)
+    // 1. Anti-Replay Timestamp Tolerance: 15 minutes (900 seconds) max skew (legacy tests check 300s)
     const nowSec = Math.floor(Date.now() / 1000);
-    if (Math.abs(nowSec - ts) > 300) {
+    const maxSkewSec = hasMarginceHeaders ? 900 : 300;
+    if (Math.abs(nowSec - ts) > maxSkewSec) {
       return {
         status: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Request timestamp is outside the valid 5-minute tolerance window' }),
+        headers: hasMarginceHeaders ? {} : { 'Content-Type': 'application/json' },
+        body: hasMarginceHeaders
+          ? ''
+          : JSON.stringify({ error: 'Request timestamp is outside the valid tolerance window' }),
       };
     }
 
     // 2. Anti-Replay Nonce Tracking
     if (this.seenNonces.has(nonce)) {
       return {
-        status: 409,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Replay detected: nonce has already been utilized' }),
+        status: hasMarginceHeaders ? 401 : 409,
+        headers: hasMarginceHeaders ? {} : { 'Content-Type': 'application/json' },
+        body: hasMarginceHeaders
+          ? ''
+          : JSON.stringify({ error: 'Replay detected: nonce has already been utilized' }),
       };
     }
     this.seenNonces.add(nonce);
 
     // 3. Cryptographic Signature Verification (HMAC-SHA256)
-    const canonicalString = `openchannel:v1\npush\n${requestRef}\n${ts}\n${nonce}\n${rawBody}`;
-    const expectedSignature = crypto
+    // Primary: margince-inbound-v1 scope, slug 'receive'
+    // Legacy fallback: openchannel:v1 / push
+    const canonicalMargince = `margince-inbound-v1\nreceive\n${requestRef}\n${ts}\n${nonce}\n${rawBody}`;
+    const digestMargince = crypto
       .createHmac('sha256', this.sharedSecret)
-      .update(canonicalString)
+      .update(canonicalMargince)
       .digest('hex');
 
-    if (
-      signature.length !== expectedSignature.length ||
-      !crypto.timingSafeEqual(Buffer.from(signature, 'utf-8'), Buffer.from(expectedSignature, 'utf-8'))
-    ) {
+    const canonicalLegacy = `openchannel:v1\npush\n${requestRef}\n${ts}\n${nonce}\n${rawBody}`;
+    const digestLegacy = crypto
+      .createHmac('sha256', this.sharedSecret)
+      .update(canonicalLegacy)
+      .digest('hex');
+
+    const expectedSignatures = [
+      `sha256=${digestMargince}`,
+      digestMargince,
+      `sha256=${digestLegacy}`,
+      digestLegacy,
+    ];
+
+    let verified = false;
+    for (const candidate of expectedSignatures) {
+      if (
+        signature.length === candidate.length &&
+        crypto.timingSafeEqual(Buffer.from(signature, 'utf-8'), Buffer.from(candidate, 'utf-8'))
+      ) {
+        verified = true;
+        break;
+      }
+    }
+
+    if (!verified) {
       return {
         status: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Invalid HMAC-SHA256 signature' }),
+        headers: hasMarginceHeaders ? {} : { 'Content-Type': 'application/json' },
+        body: hasMarginceHeaders ? '' : JSON.stringify({ error: 'Invalid HMAC-SHA256 signature' }),
       };
     }
 
-    // 4. Ingest and Process Messages
-    let messages: Message[] = [];
+    // 4. Ingest and Process Message / Arrival
+    let parsed: unknown;
     try {
-      messages = JSON.parse(rawBody);
+      parsed = JSON.parse(rawBody);
     } catch {
       return {
         status: 400,
@@ -290,51 +355,114 @@ export class MockMarginceServer {
       };
     }
 
-    const outcomes: DeliveryOutcome[] = [];
+    // Single arrival document (Margince OpenChannel contract)
+    if (typeof parsed === 'object' && parsed !== null && 'message_id' in parsed) {
+      const arrival = parsed as MarginceInboundArrival;
+      this.receivedArrivals.push(arrival);
 
-    for (const msg of messages) {
-      if (this.messageIdsSeen.has(msg.id)) {
-        outcomes.push({
-          messageId: msg.id,
-          outcome: 'duplicate',
-          reason: 'Message already ingested previously',
-        });
-      } else {
-        this.messageIdsSeen.add(msg.id);
-        this.receivedMessages.push(msg);
-        outcomes.push({
-          messageId: msg.id,
-          outcome: 'accepted',
-        });
-      }
+      const msg: Message = {
+        id: arrival.message_id,
+        network: 'fake',
+        account: arrival.to?.account ?? 'unknown_account',
+        thread: arrival.thread_id ?? arrival.message_id,
+        threadKind: arrival.participants && arrival.participants.length > 0 ? 'group' : 'dm',
+        direction: 'inbound',
+        time: arrival.occurred_at ?? new Date(ts * 1000).toISOString(),
+        from: {
+          accountId: arrival.from?.account ?? 'unknown_from',
+          displayName: arrival.from?.name ?? 'Unknown Sender',
+        },
+        to: arrival.to
+          ? [
+              {
+                accountId: arrival.to.account ?? 'unknown_to',
+                displayName: arrival.to.name ?? 'Sales Rep',
+              },
+            ]
+          : [],
+        participants: arrival.participants?.map((p) => ({
+          accountId: p.account ?? 'unknown_participant',
+          displayName: p.name ?? 'Participant',
+        })),
+        text: arrival.body ?? '',
+      };
+
+      this.receivedMessages.push(msg);
+      this.receivedRequests.push({
+        ref: requestRef,
+        timestamp: ts,
+        nonce,
+        signature,
+        messages: [msg],
+        arrival,
+      });
+
+      // Margince returns 202 Accepted with empty body
+      return {
+        status: 202,
+        headers: {},
+        body: '',
+      };
     }
 
-    this.receivedRequests.push({
-      ref: requestRef,
-      timestamp: ts,
-      nonce,
-      signature,
-      messages,
-    });
+    // Batch messages array (Legacy format fallback)
+    if (Array.isArray(parsed)) {
+      const messages = parsed as Message[];
+      const outcomes: DeliveryOutcome[] = [];
+
+      for (const msg of messages) {
+        if (this.messageIdsSeen.has(msg.id)) {
+          outcomes.push({
+            messageId: msg.id,
+            outcome: 'duplicate',
+            reason: 'Message already ingested previously',
+          });
+        } else {
+          this.messageIdsSeen.add(msg.id);
+          this.receivedMessages.push(msg);
+          outcomes.push({
+            messageId: msg.id,
+            outcome: 'accepted',
+          });
+        }
+      }
+
+      this.receivedRequests.push({
+        ref: requestRef,
+        timestamp: ts,
+        nonce,
+        signature,
+        messages,
+      });
+
+      return {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ results: outcomes }),
+      };
+    }
 
     return {
-      status: 200,
+      status: 400,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ results: outcomes }),
+      body: JSON.stringify({ error: 'Unrecognized payload format' }),
     };
   }
 }
 
 /**
- * Helper to generate a valid canonical HMAC-SHA256 signature for testing or sink delivery.
+ * Helper to generate a valid canonical HMAC-SHA256 signature for Margince OpenChannel.
  */
 export function signMargincePayload(
   secretKey: string,
   ref: string,
   timestamp: number,
   nonce: string,
-  rawBody: string
+  rawBody: string,
+  scope: string = 'margince-inbound-v1',
+  slug: string = 'receive'
 ): string {
-  const canonicalString = `openchannel:v1\npush\n${ref}\n${timestamp}\n${nonce}\n${rawBody}`;
-  return crypto.createHmac('sha256', secretKey).update(canonicalString).digest('hex');
+  const canonicalString = `${scope}\n${slug}\n${ref}\n${timestamp}\n${nonce}\n${rawBody}`;
+  const digest = crypto.createHmac('sha256', secretKey).update(canonicalString).digest('hex');
+  return `sha256=${digest}`;
 }
