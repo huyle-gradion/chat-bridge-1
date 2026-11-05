@@ -30,10 +30,11 @@ Chat Bridge strictly decouples chat ingestion, pipeline processing, and destinat
 
 ## 2. User Story TDD Execution Runbook
 
-Every user story implementation must follow the **5-Step Factory Lifecycle** defined in [`docs/factory-model-setup.md`](../../docs/factory-model-setup.md#operational-runbook-executing-a-user-story-via-the-factory):
+Every user story implementation must follow the **6-Step Factory Lifecycle** defined in [`docs/factory-model-setup.md`](../../docs/factory-model-setup.md#operational-runbook-executing-a-user-story-via-the-factory):
 
-1. **Step 1: Story Trigger & Context Loading**
+1. **Step 1: Story Trigger, Context Loading & Implementation Plan**
    - Read target story BDD scenarios from [`docs/user-stories.md`](../../docs/user-stories.md) and related ADRs in [`docs/decisions/`](../../docs/decisions/).
+   - Draft an implementation plan covering affected files, contract signatures, and edge cases before writing code.
 2. **Step 2: Red Phase (Test First)**
    - Create or update Vitest suite using `FakeSource`, `ScenarioBuilder`, or `MockMarginceServer`.
    - Run `pnpm test <test-file>` and confirm expected failure (Red).
@@ -46,9 +47,11 @@ Every user story implementation must follow the **5-Step Factory Lifecycle** def
      * Boundary isolation between Sources, Sinks, and Engine (`guards/contract-boundary.ts`).
      * Zero banned internal jargon in UI strings (`guards/plain-language.ts`).
      * Zero unused exports (`guards/unused-exports.ts`).
-5. **Step 5: Definition of Done & Sign-Off**
+5. **Step 5: Adversarial Audit & Trajectory Review**
+   - Conduct an isolated review of the diff against acceptance criteria, ADR compliance, and the 20% edge cases (transient errors, resource leaks, privacy boundaries).
+6. **Step 6: Definition of Done & Sign-Off**
    - Mark story checkbox done (`- [x]`) in [`docs/user-stories.md`](../../docs/user-stories.md).
-   - Present clean diff summary and test evidence for developer review and approval.
+   - Present clean diff summary, test evidence, and audit confirmation for developer review and approval.
 
 ---
 

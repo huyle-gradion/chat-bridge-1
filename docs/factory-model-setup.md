@@ -214,7 +214,7 @@ This section defines the end-to-end execution lifecycle when Dylan (or any devel
 
 ### 1. Developer-Agent Collaboration Flow
 
-The Factory Model operates as a **semi-automated, governed assembly line**. The developer acts as the **Orchestrator** (setting intent and approving outcomes), while the AI agent acts as the **Factory Worker** (writing code, executing tests, and self-healing against automated quality gates).
+The Factory Model operates as a **semi-automated, governed assembly line**. The developer acts as the **Orchestrator** (setting intent, reviewing plans, and approving outcomes), while the AI agent acts as the **Factory Worker** (scoping plans, writing code, executing tests, self-healing against automated quality gates, and undergoing an adversarial review).
 
 ```mermaid
 flowchart TD
@@ -222,7 +222,7 @@ flowchart TD
     
     subgraph FactoryLoop["Autonomous Factory Floor Loop"]
         direction TB
-        Trigger --> Load["2. Context Retrieval: BDD Criteria + ADRs"]
+        Trigger --> Load["2. Context Retrieval & Implementation Plan"]
         Load --> Red["3. Red Phase: Author Vitest & Confirm Red"]
         Red --> Green["4. Green Phase: Implement Minimal Production Code"]
         Green --> RunTest["5. Execute Test Suite"]
@@ -233,21 +233,25 @@ flowchart TD
         RunTest -->|Pass| Guards["6. Guard Phase: Run pnpm guard"]
         Guards -->|Violation| FixGuards["Auto-Fix Boundary / Jargon Violations"]
         FixGuards --> Guards
+        
+        Guards -->|All Passed| Audit["7. Adversarial Review: Independent Trajectory Audit"]
+        Audit -->|Gaps Found| Green
     end
     
-    Guards -->|All Passed| Done["7. Definition of Done: Update Backlog Checkbox"]
-    Done --> Review["8. Present Clean Diff Summary"]
+    Audit -->|Audit Clear| Done["8. Definition of Done: Update Backlog Checkbox"]
+    Done --> Review["9. Present Clean Diff and Audit Summary"]
     Review --> DevSignOff["Developer: Review & Commit Sign-Off"]
 ```
 
-### 2. The 5-Step Story Lifecycle
+### 2. The 6-Step Story Lifecycle
 
-#### Step 1: Intent & Story Trigger (Developer $\rightarrow$ Agent)
+#### Step 1: Intent, Context Loading & Implementation Plan (Developer -> Agent)
 * **Trigger:** Developer instructs: *"Implement `US-S1-01` (Fake Source & Mock Margince Harness)"*.
 * **Autonomous Context Loading:** The agent reads:
   1. The BDD Gherkin scenario from [`docs/user-stories.md`](user-stories.md).
   2. Architectural requirements from related ADRs (e.g., [`docs/decisions/0018-testing-harness-scenario-contract-runner.md`](decisions/0018-testing-harness-scenario-contract-runner.md)).
   3. Boundary and privacy invariants from [`.agents/rules/AGENTS.md`](../.agents/rules/AGENTS.md).
+* **Pre-Execution Plan:** For complex stories, the agent outlines affected files, contract signatures, synthetic test cases, and edge case boundaries before modifying production code.
 
 #### Step 2: Red Phase: Test First (Agent Autonomy)
 * The agent authors unit or contract tests under `packages/<package>/tests/` matching the Gherkin `Given / When / Then` assertions.
@@ -275,12 +279,20 @@ flowchart TD
   3. **UX Jargon Guard:** `guards/plain-language.ts` ensures no banned words (`sink`, `outbox`, `JID`, `regex`) appear in user-facing surfaces.
   4. **Dead Code:** `guards/unused-exports.ts` confirms no dangling or unused exports.
 
-#### Step 5: Definition of Done & Human Sign-Off (Agent $\rightarrow$ Developer)
+#### Step 5: Adversarial Audit & Trajectory Review (Isolated Verification)
+* The implementation is audited against potential blind spots and edge cases:
+  1. **Acceptance Verification:** Verifies all Gherkin clauses in [`docs/user-stories.md`](user-stories.md) are strictly covered.
+  2. **Architectural Alignment:** Confirms no drift against accepted ADR patterns in [`docs/decisions/`](decisions/).
+  3. **The 20% Edge Cases:** Checks transient network handling, error logging without PII, rate-limiting, and resource cleanup.
+  *If gaps are discovered, the agent patches them before requesting developer sign-off.*
+
+#### Step 6: Definition of Done & Human Sign-Off (Agent -> Developer)
 * The agent updates the story checkbox (`- [x]`) in [`docs/user-stories.md`](user-stories.md).
 * The agent presents a concise diff summary:
   * Files created / modified.
   * Test execution log verifying Green.
   * Guard verification log verifying zero violations.
+  * Adversarial audit confirmation.
 * **Human Checkpoint:** The developer reviews the final diff and approves the commit.
 
 ---
@@ -290,11 +302,12 @@ flowchart TD
 | Lifecycle Phase | Autonomous (Agent & Harness) | Human Control (Developer / Dylan) |
 | :--- | :--- | :--- |
 | **Story Selection** | None | Selects target story from backlog based on sprint priority |
-| **Context Loading** | Reads BDD scenarios, ADRs, and type contracts | Clarifies ambiguous business requirements if requested |
+| **Context & Plan** | Reads BDD scenarios and ADRs; formulates implementation plan | Reviews and steers plan for high-complexity architectural stories |
 | **Test Authoring (Red)** | Generates Vitest assertions from Gherkin specifications | Reviews test coverage strategy if architecture changes |
 | **Implementation (Green)**| Writes minimal production TypeScript code | Steers trade-offs if multiple implementation paths exist |
 | **Self-Healing** | Parses error traces, diagnoses bugs, and iterates code | Steps in only if an external spec flaw is discovered |
 | **Quality Gates** | Runs AST linters, cycle detectors, and plain language guards | Configures project tolerances and rule definitions |
+| **Adversarial Audit** | Evaluates diff against edge cases, ADRs, and acceptance criteria | Validates audit findings and assesses business risk |
 | **Final Sign-Off** | Marks backlog checklist done, formats clean diff summary | Reviews code changes, approves, and commits |
 
 

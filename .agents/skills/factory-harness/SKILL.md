@@ -68,11 +68,12 @@ All packages must compile with zero warnings, all guards pass, and Vitest suite 
 
 ## 3. Operational Story Execution Runbook
 
-Once the factory floor is verified, execute user stories using the **5-Step Orchestrator $\leftrightarrow$ Agent Lifecycle**:
+Once the factory floor is verified, execute user stories using the **6-Step Orchestrator <-> Agent Lifecycle**:
 
-1. **Story Trigger:** Developer specifies story ID (e.g., `US-S1-01`). Agent loads BDD scenarios and relevant ADRs.
-2. **Red Phase (Test First):** Agent authors Vitest assertions and verifies failure (`Red`).
+1. **Story Trigger & Plan:** Developer specifies story ID (e.g., `US-S1-01`). Agent loads BDD scenarios and relevant ADRs, then outlines an implementation plan.
+2. **Red Phase (Test First):** Agent authors Vitest assertions and verifies failure (`Red`) using synthetic fixtures.
 3. **Green Phase & Self-Healing:** Agent writes minimal code. If tests or compiler fail, agent diagnoses stack traces and patches code autonomously.
 4. **Guard Phase:** Agent runs `pnpm guard` to verify AST rules, contract boundaries, and zero jargon.
-5. **Sign-Off:** Agent marks story checkbox done in backlog and presents clean diff for developer review and approval.
+5. **Adversarial Review Phase:** Agent conducts an isolated review of the diff against acceptance criteria, ADR compliance, error paths, and edge cases.
+6. **Sign-Off:** Agent marks story checkbox done in backlog and presents clean diff and audit summary for developer review and approval.
 
