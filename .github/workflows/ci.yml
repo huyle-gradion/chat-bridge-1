@@ -1,0 +1,56 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gate:
+    name: Verify Invariants & Test Suites
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout chat-bridge
+        uses: actions/checkout@v4
+        with:
+          path: chat-bridge
+
+      - name: Checkout agentic-factory
+        uses: actions/checkout@v4
+        with:
+          repository: vantrangradion/agentic-factory
+          path: agentic-factory
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build Factory Tooling
+        working-directory: agentic-factory
+        run: |
+          pnpm install
+          pnpm build
+
+      - name: Install chat-bridge Dependencies
+        working-directory: chat-bridge
+        run: pnpm install --frozen-lockfile
+
+      - name: Build chat-bridge
+        working-directory: chat-bridge
+        run: pnpm build
+
+      - name: Run Factory Deterministic Guards
+        working-directory: chat-bridge
+        run: pnpm guard
+
+      - name: Run Test Suites
+        working-directory: chat-bridge
+        run: pnpm test
