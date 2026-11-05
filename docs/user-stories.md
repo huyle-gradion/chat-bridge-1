@@ -3,6 +3,9 @@
 **Document Version:** 1.2  
 **Target Release:** Month 2 Beta (Demo: Fri 13 Nov 2026, Acceptance: Fri 27 Nov 2026)  
 **Spec Reference:** [`docs/spec.md`](spec.md) (v0.5)  
+**Architecture Decisions:** [`docs/decisions.md`](decisions.md) (ADRs 0001–0032)  
+**Engineering Methodology:** [`docs/the-new-sdlc.md`](the-new-sdlc.md) (The Factory Model & Harness Engineering)  
+**Foundation Scaffolding:** [`docs/factory-model-setup.md`](factory-model-setup.md) (Sprint 0 Setup Checklist)  
 **Author:** Senior Product Manager
 
 ---
@@ -86,6 +89,10 @@ flowchart TD
 
 _Goal: Prove end-to-end message flow from fake/real sources through encrypted outbox into Margince CRM and verify zero data leaks._
 
+> [!NOTE]
+> **Foundation / Factory Setup Prerequisite:**  
+> Before implementing product features in Sprint 1, the monorepo workspace topology, AST guardrails, and contract test runners are initialized per the [Factory Model & Harness Engineering Setup Checklist](factory-model-setup.md).
+
 | User Story ID  | Epic   | Feature | Title                                    | Priority | Immediate Dependencies                  |
 | :------------- | :----- | :------ | :--------------------------------------- | :------- | :-------------------------------------- |
 | **`US-S1-01`** | Epic 1 | `S-1`   | Fake Source & Mock Margince Harness      | Must     | **None** _(Foundational Testing Root)_  |
@@ -141,6 +148,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `S-1` / `Section 8` | **Priority:** Must
 - **User Persona:** Dylan (Software Engineer)
 - **Dependencies:** None (Foundational Testing Root)
+- **Technical Reference:** [Factory Model Setup — Phases 3 & 4](factory-model-setup.md#phase-3-synthetic-testing-harness--scenario-engine)
 - **User Story:**
   > As a software engineer (Dylan) building Chat Bridge features,  
   > I want fully deterministic chat replay sources and offline protocol test doubles,  
@@ -728,8 +736,8 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
     - **And** memory (RSS) remains **under 250 MB**,
     - **And** the UI displays: _"App health: Good"_.
   - **Scenario 2: Detailed diagnostic numbers one click away**
-    - **When** Charlotte clicks on the *"App health: Good"* badge,
-    - **Then** an expandable drawer reveals technical details: CPU %, Memory (MB), Messages per minute, Queue depth per destination, and an *"Export diagnostic report"* button (scrubbed of all PII and message text).
+    - **When** Charlotte clicks on the _"App health: Good"_ badge,
+    - **Then** an expandable drawer reveals technical details: CPU %, Memory (MB), Messages per minute, Queue depth per destination, and an _"Export diagnostic report"_ button (scrubbed of all PII and message text).
 
 ---
 

@@ -28,21 +28,27 @@ Chat Bridge strictly decouples chat ingestion, pipeline processing, and destinat
 
 ---
 
-## 2. Test-Driven Development (TDD) Runbook
+## 2. User Story TDD Execution Runbook
 
-Every feature implementation must follow strict TDD:
+Every user story implementation must follow the **5-Step Factory Lifecycle** defined in [`docs/factory-model-setup.md`](../../docs/factory-model-setup.md#operational-runbook-executing-a-user-story-via-the-factory):
 
-1. **Step 1: Write Test First (Red)**
-   - Create or update a test in `tests/` using Vitest.
-   - Use `FakeSource` for chat replay and `MockMarginceServer` for push/pull endpoints.
-   - Run `npx vitest run <test-file>` and verify the test fails with an expected assertion error.
-2. **Step 2: Implement Minimal Code (Green)**
-   - Implement only the minimal logic required to satisfy the failing test under `src/`.
-   - Run `npx vitest run <test-file>` and verify the test passes.
-3. **Step 3: Refactor & Guard Check**
-   - Verify zero circular dependencies (`madge` or lint checks).
-   - Verify zero dead code or unused exports.
-   - Verify no PII or real credentials in test fixtures.
+1. **Step 1: Story Trigger & Context Loading**
+   - Read target story BDD scenarios from [`docs/user-stories.md`](../../docs/user-stories.md) and related ADRs in [`docs/decisions/`](../../docs/decisions/).
+2. **Step 2: Red Phase (Test First)**
+   - Create or update Vitest suite using `FakeSource`, `ScenarioBuilder`, or `MockMarginceServer`.
+   - Run `pnpm test <test-file>` and confirm expected failure (Red).
+3. **Step 3: Green Phase & Autonomous Feedback Loop**
+   - Implement minimal production code required to satisfy the test.
+   - Re-run test suite. Autonomously diagnose stack traces and iterate until all tests pass (Green).
+4. **Step 4: Quality Gate Verification**
+   - Run `pnpm guard` to enforce:
+     * Zero circular dependencies (`guards/no-cycles.ts`).
+     * Boundary isolation between Sources, Sinks, and Engine (`guards/contract-boundary.ts`).
+     * Zero banned internal jargon in UI strings (`guards/plain-language.ts`).
+     * Zero unused exports (`guards/unused-exports.ts`).
+5. **Step 5: Definition of Done & Sign-Off**
+   - Mark story checkbox done (`- [x]`) in [`docs/user-stories.md`](../../docs/user-stories.md).
+   - Present clean diff summary and test evidence for developer review and approval.
 
 ---
 
