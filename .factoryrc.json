@@ -34,6 +34,16 @@
     },
     "secrets": {
       "enabled": true
+    },
+    "todoIssueLinks": {
+      "enabled": true
+    },
+    "commentedCode": {
+      "enabled": true
+    },
+    "deadExports": {
+      "enabled": true,
+      "rootDir": "packages"
     }
   },
   "testing": {
