@@ -8,6 +8,12 @@ importers:
 
   .:
     devDependencies:
+      '@agentic-factory/guards':
+        specifier: link:../agentic-factory/packages/guards
+        version: link:../agentic-factory/packages/guards
+      '@agentic-factory/harness':
+        specifier: link:../agentic-factory/packages/harness
+        version: link:../agentic-factory/packages/harness
       '@types/node':
         specifier: ^22.10.1
         version: 22.20.5

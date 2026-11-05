@@ -1,0 +1,44 @@
+{
+  "$schema": "https://agentic-factory.dev/schema.json",
+  "project": {
+    "name": "chat-bridge",
+    "architecture": "modular-monorepo"
+  },
+  "guards": {
+    "noCycles": {
+      "enabled": true,
+      "rootDir": "packages"
+    },
+    "boundaries": [
+      {
+        "package": "packages/types",
+        "disallowImportsFrom": ["packages/engine", "packages/sources", "packages/sinks", "packages/testing"]
+      },
+      {
+        "package": "packages/engine",
+        "disallowImportsFrom": ["packages/sources", "packages/sinks"]
+      },
+      {
+        "package": "packages/sources",
+        "disallowImportsFrom": ["packages/sinks"]
+      },
+      {
+        "package": "packages/sinks",
+        "disallowImportsFrom": ["packages/sources"]
+      }
+    ],
+    "plainLanguage": {
+      "enabled": true,
+      "targetDirs": ["packages/ui", "packages/i18n", "packages/locales"],
+      "forbiddenTerms": ["sink", "outbox", "jid", "regex", "daemon", "payload", "stdout"]
+    },
+    "secrets": {
+      "enabled": true
+    }
+  },
+  "testing": {
+    "targetCoverage": 85,
+    "maxSuiteDurationMs": 2000,
+    "requireSyntheticScenarios": true
+  }
+}
