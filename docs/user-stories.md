@@ -258,6 +258,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `S-2` | **Priority:** Must
 - **User Persona:** Charlotte (Sales Rep)
 - **Dependencies:** `US-S1-01` (Fake Source Contracts)
+- **Status:** Complete
 - **User Story:**
   > As a sales representative in Vietnam (Charlotte),  
   > I want to securely link my Zalo account and be protected from unintended session disconnections,  
