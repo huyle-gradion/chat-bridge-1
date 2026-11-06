@@ -4,6 +4,7 @@
     { "path": "./packages/types" },
     { "path": "./packages/testing" },
     { "path": "./packages/sources/fake" },
+    { "path": "./packages/sources/whatsapp" },
     { "path": "./packages/sinks/margince" },
     { "path": "./packages/engine" }
   ]

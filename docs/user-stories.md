@@ -229,6 +229,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `S-3` | **Priority:** Must
 - **User Persona:** Charlotte (Sales Rep)
 - **Dependencies:** `US-S1-01` (Fake Source Contracts)
+- **Status:** Complete
 - **User Story:**
   > As a sales representative (Charlotte),  
   > I want to link my WhatsApp account directly from my mobile device without sharing my account password,  
