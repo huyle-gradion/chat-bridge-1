@@ -450,6 +450,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `K-0` | **Priority:** Must
 - **User Persona:** Marcus (Operations Lead)
 - **Dependencies:** `US-C3-01` (Outbox Multi-Queue Structure)
+- **Status:** Complete
 - **User Story:**
   > As an operations lead (Marcus),  
   > I want chat data to replicate across multiple business destinations through independent, isolated pipelines,  
