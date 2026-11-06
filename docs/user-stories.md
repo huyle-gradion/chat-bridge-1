@@ -426,6 +426,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `C-5` | **Priority:** Must
 - **User Persona:** Marcus (Operations Lead)
 - **Dependencies:** `US-C3-01` (Outbox Queue Dispatch), `US-K4-01` (Margince Mock Rate Limiting)
+- **Status:** Complete
 - **User Story:**
   > As an operations lead (Marcus),  
   > I want message delivery to dynamically adapt to destination service limits and isolate unprocessable payloads,  
