@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "composite": true,
+    "tsBuildInfoFile": "tsconfig.tsbuildinfo"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/types" },
+    { "path": "../../packages/engine" },
+    { "path": "../../packages/testing" },
+    { "path": "../../packages/sources/fake" },
+    { "path": "../../packages/sources/whatsapp" },
+    { "path": "../../packages/sources/zalo" },
+    { "path": "../../packages/sinks/margince" }
+  ]
+}

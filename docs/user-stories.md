@@ -170,6 +170,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `I-1` | **Priority:** Must
 - **User Persona:** Dylan (Software Engineer)
 - **Dependencies:** `US-C3-01` (Headless Engine Core)
+- **Status:** Complete
 - **User Story:**
   > As a software engineer (Dylan),  
   > I want full programmatic and headless control over all engine features with structured machine-readable output,  
