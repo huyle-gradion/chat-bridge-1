@@ -374,6 +374,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `C-4` | **Priority:** Must
 - **User Persona:** Charlotte (Sales Rep)
 - **Dependencies:** `US-S1-01` (Noise Test Fixtures)
+- **Status:** Complete
 - **User Story:**
   > As a sales representative (Charlotte),  
   > I want non-conversational protocol events and social broadcast noise to be filtered out automatically,  
