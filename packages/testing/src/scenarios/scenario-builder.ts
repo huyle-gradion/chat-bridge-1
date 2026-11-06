@@ -41,6 +41,7 @@ export class ScenarioBuilder {
   private noiseItems: Array<'reaction' | 'typing' | 'story' | 'newsletter' | 'edit'> = [];
   private lidMappings: Array<{ phone: string; lid: string }> = [];
   private mediaItems: Array<{ type: string; filename: string; sizeBytes: number }> = [];
+  private groupConfigs: Array<{ name: string; participantCount: number }> = [];
 
   constructor(options: ScenarioBuilderOptions = {}) {
     this.rng = createPrng(options.seed ?? 42);
@@ -76,6 +77,11 @@ export class ScenarioBuilder {
 
   public withMedia(type: string, filename: string, sizeBytes: number): this {
     this.mediaItems.push({ type, filename, sizeBytes });
+    return this;
+  }
+
+  public withGroup(name: string = 'Test Sales Group', participantCount: number = 3): this {
+    this.groupConfigs.push({ name, participantCount });
     return this;
   }
 
@@ -146,6 +152,28 @@ export class ScenarioBuilder {
         text: `Thank you for reaching out. Here is our product catalog.`,
       };
       messages.push(outboundMsg);
+    }
+
+    // 2b. Generate Group chats
+    for (const grp of this.groupConfigs) {
+      const threadId = `thread-group-${grp.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+      const groupParticipants = contacts.slice(0, grp.participantCount);
+      const timeStr = new Date(baseTime + msgCounter * 60000).toISOString();
+      const sender = groupParticipants[0] ?? contacts[0] ?? rep;
+
+      messages.push({
+        id: `${this.network}:${this.repAccount}:msg-grp-${msgCounter++}`,
+        network: this.network,
+        account: this.repAccount,
+        thread: threadId,
+        threadKind: 'group',
+        direction: 'inbound',
+        time: timeStr,
+        from: sender,
+        to: [],
+        participants: groupParticipants,
+        text: `Discussion in group ${grp.name}`,
+      });
     }
 
     // 3. Inject OTP codes
