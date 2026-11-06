@@ -21,9 +21,9 @@ out/
 *.db-journal
 *.sqlite
 *.sqlite3
-data/
-outbox/
-archive/
+/data/
+/outbox/
+/archive/
 
 # Logs
 npm-debug.log*
