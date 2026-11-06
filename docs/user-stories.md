@@ -324,6 +324,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `C-8` / `ADR 0028` | **Priority:** Must
 - **User Persona:** Charlotte (Sales Rep)
 - **Dependencies:** `US-C8-01` (Picker Gating), `US-C3-01` (Outbox Queue Status)
+- **Status:** Complete
 - **User Story:**
   > As a sales representative (Charlotte),  
   > I want to review recent message processing activity and selectively forward specific work messages from unauthorized conversations on demand,  
