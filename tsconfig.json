@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "./packages/types" },
-    { "path": "./packages/testing" }
+    { "path": "./packages/testing" },
+    { "path": "./packages/sources/fake" }
   ]
 }
