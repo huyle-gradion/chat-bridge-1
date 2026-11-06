@@ -8,6 +8,7 @@
     { "path": "./packages/sources/zalo" },
     { "path": "./packages/sinks/margince" },
     { "path": "./packages/engine" },
-    { "path": "./packages/cli" }
+    { "path": "./packages/cli" },
+    { "path": "./packages/desktop" }
   ]
 }
