@@ -206,6 +206,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `I-5` | **Priority:** Must
 - **User Persona:** Charlotte (Sales Rep)
 - **Dependencies:** None (Foundational Desktop Shell)
+- **Status:** Complete
 - **User Story:**
   > As a non-technical sales representative (Charlotte),  
   > I want a frictionless, self-contained application installation on my work computer,  
@@ -221,7 +222,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
   - **Scenario 2: Unsigned beta warning guidance**
     - **Given** an unsigned beta binary on macOS Gatekeeper or Windows SmartScreen,
     - **When** the operating system displays an "unidentified developer" prompt,
-    - **Then** the download portal provides a single-page visual guide with screenshots showing how to click "Open Anyway" or "More Info → Run Anyway".
+    - **Then** the download portal provides a single-page visual guide with screenshots showing how to click "Open Anyway" or "More Info -> Run Anyway".
 
 ---
 
