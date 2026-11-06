@@ -350,6 +350,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `C-2` | **Priority:** Must
 - **User Persona:** Charlotte (Sales Rep)
 - **Dependencies:** `US-C8-01` (Stage 3 Picker Gating feeds into Stage 4 Filters)
+- **Status:** Complete
 - **User Story:**
   > As a sales representative (Charlotte),  
   > I want automated privacy safeguards that block security verification codes, high-noise group chatter, and restricted contacts,  
