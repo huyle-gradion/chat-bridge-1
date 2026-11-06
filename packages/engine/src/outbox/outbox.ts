@@ -177,6 +177,35 @@ export class Outbox {
     return result.count;
   }
 
+  public async isMessageDelivered(messageId: string): Promise<boolean> {
+    const stmt = this.db.prepare(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered
+      FROM sink_deliveries
+      WHERE message_id = ?
+    `);
+    const result = stmt.get(messageId) as { total: number; delivered: number | null };
+    return result.total > 0 && result.total === (result.delivered ?? 0);
+  }
+
+  public async purgeCompletedMessages(maxAgeMs: number = 0): Promise<number> {
+    const cutoff = Date.now() - maxAgeMs;
+    const stmt = this.db.prepare(`
+      DELETE FROM messages
+      WHERE id IN (
+        SELECT m.id
+        FROM messages m
+        JOIN sink_deliveries d ON m.id = d.message_id
+        GROUP BY m.id
+        HAVING COUNT(*) = SUM(CASE WHEN d.status = 'delivered' THEN 1 ELSE 0 END)
+           AND MAX(d.delivered_at) <= ?
+      )
+    `);
+    const result = stmt.run(cutoff);
+    return result.changes;
+  }
+
   public close(): void {
     if (this.db && this.db.open) {
       this.db.close();
