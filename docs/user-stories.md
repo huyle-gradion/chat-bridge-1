@@ -472,6 +472,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `K-4` | **Priority:** Must
 - **User Persona:** Charlotte (Sales Rep)
 - **Dependencies:** `US-S1-01` (Mock Margince Server), `US-C3-01` (Encrypted Outbox)
+- **Status:** Complete
 - **User Story:**
   > As a sales representative (Charlotte),  
   > I want an effortless, secure connection between Chat Bridge and Margince CRM,  
