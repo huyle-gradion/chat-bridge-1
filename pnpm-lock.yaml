@@ -125,6 +125,31 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.5)(supports-color@7.2.0)
 
+  packages/sources/zalo:
+    dependencies:
+      '@chat-bridge/types':
+        specifier: workspace:*
+        version: link:../../types
+      better-sqlite3:
+        specifier: ^13.0.3
+        version: 13.0.3
+    devDependencies:
+      '@chat-bridge/testing':
+        specifier: workspace:*
+        version: link:../../testing
+      '@types/better-sqlite3':
+        specifier: ^9.6.0
+        version: 9.6.0
+      '@types/node':
+        specifier: ^22.10.1
+        version: 22.20.5
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.5)(supports-color@7.2.0)
+
   packages/testing:
     dependencies:
       '@chat-bridge/types':
