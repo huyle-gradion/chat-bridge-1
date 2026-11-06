@@ -287,6 +287,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
 - **Feature ID:** `C-8` | **Priority:** Must
 - **User Persona:** Charlotte (Sales Rep)
 - **Dependencies:** `US-S3-01` or `US-S2-01` (Discovered Chat Roster)
+- **Status:** Complete
 - **User Story:**
   > As a sales representative (Charlotte) protective of personal privacy,  
   > I want to explicitly authorize only my business-related conversations for synchronization,  
