@@ -54,10 +54,11 @@ The system consists of three strictly decoupled components:
   - Never expose internal jargon to the user on UI screens or error dialogs (no *"sink"*, *"outbox"*, *"JID"*, or *"regex"*).
   - Use plain English: e.g., *"Where to send"* instead of *"Sink"*, *"Waiting messages"* instead of *"Outbox queue"*.
   - Every error message must clearly describe what happened and state the exact next click to fix it.
-* **Automated PR & Review Workflow:**
-  - When assigned a task or user story, the agent executes the complete 6-step lifecycle autonomously (Red -> Green -> Guard -> Adversarial Audit).
-  - Creates a dedicated feature branch, pushes to the remote, and opens a Pull Request via GitHub CLI (`gh pr create`).
-  - PR descriptions must include full Red-to-Green test logs, guard passes, and adversarial audit summaries for developer sign-off.
+* **Agent Loop (`agentic-loop`):**
+  - Issues are delivered by the agent loop, configured in the `agent` section of `.factoryrc.json`. A run is one step of the lifecycle: Red (failing tests and a plan), then a person approves the plan, then Green (implementation).
+  - Inside a loop run, never run `git commit`, `git push`, or `gh`. The loop creates the branch, commits, pushes, and opens the pull request with the Red and Green logs.
+  - Never change the protected paths listed in `.factoryrc.json` (`guards/`, `e2e/`, `bench/`, these rules, the spec, and the test and build configuration). The loop reverts any change to them.
+  - In the Green step, never edit the approved tests. Change the implementation until they pass.
 * **Story Batching and Milestone Execution:**
   - When assigned a multi-story batch or sprint milestone, execute stories sequentially in topological dependency order.
   - Never bundle multiple stories into a single monolithic PR; each story must deliver an isolated feature branch and dedicated PR.
