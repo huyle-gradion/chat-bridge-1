@@ -4,3 +4,7 @@ packages:
   - 'packages/sinks/*'
 allowBuilds:
   esbuild: true
+minimumReleaseAgeExclude:
+  - '@agentic-factory/guards@1.0.0'
+  - '@agentic-factory/harness@1.0.0'
+  - '@agentic-factory/loop@0.1.0'
