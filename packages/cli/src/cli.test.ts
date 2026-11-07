@@ -1,8 +1,138 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { executeCli } from './cli.js';
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+const cliDistPath = path.join(repoRoot, 'packages/cli/dist/cli.js');
+const cliIndexDistPath = path.join(repoRoot, 'packages/cli/dist/index.js');
+const tscBinPath = path.join(repoRoot, 'node_modules/typescript/bin/tsc');
+
+function cleanChildEnv(dataDir: string): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env, CHAT_BRIDGE_DATA_DIR: dataDir };
+  for (const key of Object.keys(env)) {
+    if (key.startsWith('VITEST')) {
+      delete env[key];
+    }
+  }
+  return env;
+}
+
+function runBuiltCli(
+  args: string[],
+  dataDir: string
+): { exitCode: number; stdout: string; stderr: string } {
+  const result = spawnSync(process.execPath, [cliDistPath, ...args], {
+    cwd: repoRoot,
+    env: cleanChildEnv(dataDir),
+    encoding: 'utf-8',
+    timeout: 30_000,
+  });
+  return {
+    exitCode: result.status ?? -1,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+  };
+}
+
+function collectRuntimeImportGraph(entryFile: string): {
+  visitedFiles: string[];
+  externalSpecifiers: string[];
+} {
+  const workspacePackages = new Map<
+    string,
+    { dir: string; main?: string; exports?: Record<string, string | { import?: string }> }
+  >();
+  const packageJsonRelPaths = [
+    'packages/types/package.json',
+    'packages/testing/package.json',
+    'packages/engine/package.json',
+    'packages/cli/package.json',
+    'packages/desktop/package.json',
+    'packages/sources/fake/package.json',
+    'packages/sources/whatsapp/package.json',
+    'packages/sources/zalo/package.json',
+    'packages/sinks/margince/package.json',
+  ];
+
+  for (const rel of packageJsonRelPaths) {
+    const full = path.join(repoRoot, rel);
+    if (fs.existsSync(full)) {
+      const parsed = JSON.parse(fs.readFileSync(full, 'utf-8')) as {
+        name: string;
+        main?: string;
+        exports?: Record<string, string | { import?: string }>;
+      };
+      workspacePackages.set(parsed.name, {
+        dir: path.dirname(full),
+        ...(parsed.main ? { main: parsed.main } : {}),
+        ...(parsed.exports ? { exports: parsed.exports } : {}),
+      });
+    }
+  }
+
+  const visited = new Set<string>();
+  const externalSpecifiers = new Set<string>();
+  const queue: string[] = [entryFile];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (visited.has(current) || !fs.existsSync(current)) {
+      continue;
+    }
+    visited.add(current);
+
+    const content = fs.readFileSync(current, 'utf-8');
+    const importRegex = /(?:import|export)\s+(?:[\s\S]*?from\s+)?['"]([^'"]+)['"]/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = importRegex.exec(content)) !== null) {
+      const spec = match[1];
+      if (!spec) {
+        continue;
+      }
+
+      if (spec.startsWith('.')) {
+        const resolved = path.resolve(path.dirname(current), spec);
+        if (fs.existsSync(resolved)) {
+          queue.push(resolved);
+        }
+        continue;
+      }
+
+      if (spec.startsWith('@chat-bridge/')) {
+        const parts = spec.split('/');
+        const pkgName = `${parts[0]}/${parts[1]}`;
+        const subpath = parts.length > 2 ? `./${parts.slice(2).join('/')}` : '.';
+        const pkgInfo = workspacePackages.get(pkgName);
+        if (pkgInfo) {
+          const exportEntry = pkgInfo.exports?.[subpath];
+          const targetRel =
+            typeof exportEntry === 'string'
+              ? exportEntry
+              : exportEntry?.import ?? (subpath === '.' ? pkgInfo.main : undefined);
+          if (targetRel) {
+            const resolved = path.resolve(pkgInfo.dir, targetRel);
+            if (fs.existsSync(resolved)) {
+              queue.push(resolved);
+            }
+          }
+        }
+        continue;
+      }
+
+      externalSpecifiers.add(spec);
+    }
+  }
+
+  return {
+    visitedFiles: Array.from(visited).map((f) => path.relative(repoRoot, f)),
+    externalSpecifiers: Array.from(externalSpecifiers),
+  };
+}
 
 describe('US-I1-01: Developer and QA Command-Line Interface (CLI) Parity', () => {
   let tempDir: string;
@@ -283,6 +413,116 @@ describe('US-I1-01: Developer and QA Command-Line Interface (CLI) Parity', () =>
         'Unknown command: "statusxyz". Run "chat-bridge --help" for available commands.'
       );
       expect(parsedWithout).not.toHaveProperty('suggestion');
+    });
+  });
+
+  describe('Scenario 11: Built binary execution and vitest-free runtime imports', () => {
+    beforeAll(() => {
+      const buildRes = spawnSync(process.execPath, [tscBinPath, '--build'], {
+        cwd: repoRoot,
+        encoding: 'utf-8',
+        timeout: 60_000,
+      });
+      expect(buildRes.status).toBe(0);
+      expect(fs.existsSync(cliDistPath)).toBe(true);
+    });
+
+    it('starts the built binary and prints its version with --version', () => {
+      const run = runBuiltCli(['--version'], tempDir);
+      expect(run.stderr).not.toContain('Error');
+      expect(run.stderr).not.toContain('Vitest');
+      expect(run.exitCode).toBe(0);
+      expect(run.stdout.trim()).toMatch(/\d+\.\d+\.\d+/);
+    });
+
+    it('executes status --json on a fresh install from the built binary and returns valid JSON', () => {
+      const run = runBuiltCli(['status', '--json'], tempDir);
+      expect(run.stderr).not.toContain('Error');
+      expect(run.exitCode).toBe(0);
+      const parsed = JSON.parse(run.stdout);
+      expect(parsed.sources).toBeDefined();
+      expect(parsed.sinks).toBeDefined();
+      expect(parsed.outbox).toBeDefined();
+      expect(parsed.telemetry).toBeDefined();
+      expect(typeof parsed.isPaused).toBe('boolean');
+    });
+
+    it('suggests the closest command when a mistyped command is passed to the built binary', () => {
+      const run = runBuiltCli(['stauts'], tempDir);
+      expect(run.exitCode).not.toBe(0);
+      expect(run.stderr).not.toContain('Vitest');
+      expect(run.stdout + run.stderr).toContain('status');
+      expect(run.stderr).toContain('Did you mean "status"?');
+
+      const jsonRun = runBuiltCli(['stauts', '--json'], tempDir);
+      expect(jsonRun.exitCode).toBe(1);
+      const parsedError = JSON.parse(jsonRun.stderr);
+      expect(parsedError.suggestion).toBe('status');
+    });
+
+    it('runs fake source commands from the built binary in a standalone Node process', () => {
+      const runPipeline = runBuiltCli(
+        ['run', '--fake', '--headless', '--json', '--timeout', '100'],
+        tempDir
+      );
+      expect(runPipeline.stderr).not.toContain('Error');
+      expect(runPipeline.exitCode).toBe(0);
+      const parsedRun = JSON.parse(runPipeline.stdout);
+      expect(parsedRun.ok).toBe(true);
+      expect(parsedRun.processedCount).toBeGreaterThan(0);
+
+      const historyRun = runBuiltCli(
+        ['history', 'import', 'fake', '--since', '2026-11-01', '--json'],
+        tempDir
+      );
+      expect(historyRun.stderr).not.toContain('Error');
+      expect(historyRun.exitCode).toBe(0);
+      const parsedHistory = JSON.parse(historyRun.stdout);
+      expect(parsedHistory.ok).toBe(true);
+      expect(parsedHistory.importedCount).toBeGreaterThan(0);
+    });
+
+    it('never loads vitest or contract test suites in the CLI runtime import graph', () => {
+      const graph = collectRuntimeImportGraph(cliDistPath);
+      expect(graph.externalSpecifiers).not.toContain('vitest');
+      expect(
+        graph.visitedFiles.some((f) => f.includes('describe-source-contract'))
+      ).toBe(false);
+      expect(
+        graph.visitedFiles.some((f) => f.includes('describe-sink-contract'))
+      ).toBe(false);
+
+      const cliUrl = pathToFileURL(cliIndexDistPath).href;
+      const script = [
+        "import mod from 'node:module';",
+        'const resolved = [];',
+        'if (typeof mod.registerHooks === "function") {',
+        '  mod.registerHooks({',
+        '    resolve(specifier, context, nextResolve) {',
+        '      resolved.push(specifier);',
+        '      return nextResolve(specifier, context);',
+        '    }',
+        '  });',
+        '}',
+        `await import(${JSON.stringify(cliUrl)});`,
+        'console.log(JSON.stringify(resolved));',
+      ].join('\n');
+
+      const probe = spawnSync(
+        process.execPath,
+        ['--input-type=module', '-e', script],
+        {
+          cwd: repoRoot,
+          env: cleanChildEnv(tempDir),
+          encoding: 'utf-8',
+          timeout: 30_000,
+        }
+      );
+
+      expect(probe.stderr).not.toContain('Vitest');
+      expect(probe.status).toBe(0);
+      const resolvedSpecifiers = JSON.parse(probe.stdout.trim()) as string[];
+      expect(resolvedSpecifiers).not.toContain('vitest');
     });
   });
 });
