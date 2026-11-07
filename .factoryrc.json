@@ -101,6 +101,11 @@
         "name": "test",
         "run": "pnpm test",
         "timeoutMs": 600000
+      },
+      {
+        "name": "e2e",
+        "run": "pnpm e2e:cli",
+        "timeoutMs": 300000
       }
     ],
     "tdd": {

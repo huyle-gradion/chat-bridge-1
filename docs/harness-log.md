@@ -44,3 +44,11 @@ Next prediction to test: a defect issue filed with its failing test attached sho
 - **Prediction:** no change to model calls or cost per issue; the next run should match the baseline within noise.
 - **Open:** gates run in the working folder (an ignored file could make them pass); helpers that tests import are not locked; one watcher per GitHub login; the CI workflow needs container isolation.
 - **Verdict:** kept, pending the next run.
+
+### 2026-11-07: e2e gate, so the loop runs the built binary
+- **Problem:** the built `chat-bridge` binary crashes on every command, `--version` included: `source-fake` imports the `@chat-bridge/testing` index, which loads the vitest contract suites. All three loop gates (build, guard, 140 unit tests) pass, because unit tests run inside vitest. The loop could ship a green PR for an app that does not start. Found by the first test in `e2e/`.
+- **Change:** a fourth gate, `e2e` (`pnpm e2e:cli`), after `test`. It runs `e2e/` in Playwright against the built binary in a separate process. `e2e/**` is already protected, so the agent cannot edit these tests. PR: pending
+- **Before:** on main at 70100a1, gates build, guard and test pass; `pnpm e2e:cli` fails 3 of 3 with the vitest error.
+- **Prediction:** the loop's fix for the defect issue passes `e2e` only when the binary starts. Expect fewer model calls than the 33-call baseline, because the failing test is attached to the issue. Gate cost: about 2 s per green attempt.
+- **After:** to fill in from the defect run's ledger record.
+- **Verdict:** pending the defect run.
