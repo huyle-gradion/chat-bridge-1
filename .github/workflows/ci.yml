@@ -42,3 +42,7 @@ jobs:
       - name: Run Test Suites
         working-directory: chat-bridge
         run: pnpm test
+
+      - name: Run End-to-End CLI Tests
+        working-directory: chat-bridge
+        run: pnpm e2e:cli

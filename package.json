@@ -11,12 +11,17 @@
     "test:unit": "vitest run",
     "test:watch": "vitest",
     "guard": "agentic-guards run",
-    "guard:legacy": "tsx guards/run-all.ts"
+    "guard:legacy": "tsx guards/run-all.ts",
+    "e2e": "playwright test -c e2e/playwright.config.ts",
+    "e2e:cli": "playwright test -c e2e/playwright.config.ts --project=cli",
+    "bench": "tsx bench/bench.ts",
+    "bench:compare": "tsx bench/compare.ts"
   },
   "devDependencies": {
     "@agentic-factory/guards": "^1.0.0",
     "@agentic-factory/harness": "^1.0.0",
     "@agentic-factory/loop": "^0.1.0",
+    "@playwright/test": "1.64.1",
     "@types/node": "^22.10.1",
     "@vitest/coverage-v8": "^2.1.8",
     "tsx": "^4.19.2",

@@ -45,3 +45,6 @@ coverage/
 playwright-report/
 test-results/
 
+
+# Bench output
+bench/results/
