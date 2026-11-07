@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "issue": 14,
+  "title": "CLI suggests the closest command when a command is mistyped",
+  "labels": [
+    "agent:plan-review"
+  ],
+  "runner": "antigravity-cli",
+  "model": "gemini-4-argon-high",
+  "startedAt": "2026-11-07T10:17:38.193Z",
+  "finishedAt": "2026-11-07T10:22:31.433Z",
+  "outcome": "passed",
+  "phases": [
+    {
+      "phase": "green",
+      "passed": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "agentExitCode": 0,
+          "usage": {
+            "input": 846521,
+            "cachedInput": 765166,
+            "output": 11824,
+            "total": 858345,
+            "requests": 18
+          },
+          "gates": [
+            {
+              "name": "build",
+              "status": "pass",
+              "durationMs": 1176
+            },
+            {
+              "name": "guard",
+              "status": "pass",
+              "durationMs": 2096
+            },
+            {
+              "name": "test",
+              "status": "pass",
+              "durationMs": 5624
+            }
+          ],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": []
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input": 846521,
+    "cachedInput": 765166,
+    "output": 11824,
+    "total": 858345,
+    "requests": 18
+  },
+  "costUsd": 0.3575,
+  "caughtBy": [],
+  "firstPass": true,
+  "stage": "build"
+}
