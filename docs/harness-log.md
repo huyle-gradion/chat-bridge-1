@@ -50,5 +50,21 @@ Next prediction to test: a defect issue filed with its failing test attached sho
 - **Change:** a fourth gate, `e2e` (`pnpm e2e:cli`), after `test`. It runs `e2e/` in Playwright against the built binary in a separate process. `e2e/**` is already protected, so the agent cannot edit these tests. PR: https://github.com/vantrangradion/chat-bridge/pull/20, defect #19
 - **Before:** on main at 70100a1, gates build, guard and test pass; `pnpm e2e:cli` fails 3 of 3 with the vitest error.
 - **Prediction:** the loop's fix for the defect issue passes `e2e` only when the binary starts. Expect fewer model calls than the 33-call baseline, because the failing test is attached to the issue. Gate cost: about 2 s per green attempt.
-- **After:** to fill in from the defect run's ledger record.
-- **Verdict:** pending the defect run.
+- **After:** defect #19 fixed by the loop (PR #21): plan 50 calls ($1.36), build 28 calls ($0.63), first pass on both, 0 hand edits. `pnpm e2e:cli` went from 3 of 3 failing to passing, in the loop and in CI.
+- **Verdict:** kept. The gate works. The call prediction was wrong: 78 calls, not fewer than 33, because the plan stage spent most of its calls tracing the import chain.
+
+### 2026-11-07: issue #17 (app health, C-9), first issue that needed review round-trips (no change yet)
+- **Runs:** clean clone of main, published packages. Plan, build, re-plan, re-plan, build: 5 stages, 139 calls, about $4.79 at list price (#14 was $0.69). Merged as PR #18.
+- **Slop that passed every gate (first build):** CPU figure always about 0; sink health read from a `health` config key only the tests set; one old failure marked a sink down forever; raw SQL from the CLI around the outbox. Caught by human review only.
+- **Reviewer error:** the first review comment wrongly dropped ADR 0013's memory thresholds, and the next plan obeyed. A second comment restored them.
+- **Plan deviation:** the approved plan said the outbox stays read-only; the build added an `updated_at` column, a migration and writes. Accepted (additive, fixes a risk the plan listed), but nothing in the loop noticed.
+- **Hand edit:** one merge conflict in `cli.test.ts` (both #17 and #19 appended tests), resolved by hand when rebasing `agent/issue-17` onto main after #21.
+- **Plans:** "Risks: None" in 3 of 4 plans until a comment asked for real risks; one plan leaked agent narration.
+
+Candidate harness changes for the Wednesday review:
+1. Build stage reads PR comments, so a code fix does not cost a full re-plan (about $1.1 each here).
+2. Prompt ranks `docs/decisions/` above review comments.
+3. Plan conformance check after the build: diff against the approved plan, flag unapproved changes.
+4. Build stage rebases onto main first and stops for a person only on a conflict.
+5. Guard for config keys read only by tests.
+6. Rewrite local paths in gate output too (PR #21's body shows `/Users/...`).
