@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "issue": 19,
+  "title": "built chat-bridge binary crashes at start because it loads vitest",
+  "labels": [
+    "bug",
+    "agent:plan-review"
+  ],
+  "runner": "antigravity-cli",
+  "model": "gemini-4-argon-high",
+  "startedAt": "2026-11-07T13:20:36.724Z",
+  "finishedAt": "2026-11-07T13:26:12.472Z",
+  "outcome": "passed",
+  "phases": [
+    {
+      "phase": "green",
+      "passed": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "agentExitCode": 0,
+          "usage": {
+            "input": 2450163,
+            "cachedInput": 2307798,
+            "output": 11141,
+            "total": 2461304,
+            "requests": 28
+          },
+          "toolCalls": {
+            "read_file": 49,
+            "run_command": 14,
+            "edit_file": 2
+          },
+          "gates": [
+            {
+              "name": "build",
+              "status": "pass",
+              "durationMs": 953
+            },
+            {
+              "name": "guard",
+              "status": "pass",
+              "durationMs": 1733
+            },
+            {
+              "name": "test",
+              "status": "pass",
+              "durationMs": 5401
+            },
+            {
+              "name": "e2e",
+              "status": "pass",
+              "durationMs": 2868
+            }
+          ],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": []
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input": 2450163,
+    "cachedInput": 2307798,
+    "output": 11141,
+    "total": 2461304,
+    "requests": 28
+  },
+  "costUsd": 0.6269,
+  "caughtBy": [],
+  "firstPass": true,
+  "stage": "build"
+}
