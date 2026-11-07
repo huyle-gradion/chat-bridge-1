@@ -1,10 +1,24 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import type { Message } from '@chat-bridge/types';
 import { executeCli } from './cli.js';
+import { CliContext } from './config.js';
+import {
+  CPU_SAMPLE_INTERVAL_MS,
+  CPU_SLOW_PERCENT,
+  CPU_PROBLEM_PERCENT,
+  MEMORY_SLOW_MB,
+  MEMORY_PROBLEM_MB,
+  QUEUE_SLOW_THRESHOLD,
+  QUEUE_WAIT_SLOW_SECONDS,
+  SINK_DOWN_HALT_MS,
+  ERROR_WINDOW_MS,
+  MESSAGE_RATE_WINDOW_MS,
+} from './commands/status.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const cliDistPath = path.join(repoRoot, 'packages/cli/dist/cli.js');
@@ -523,6 +537,362 @@ describe('US-I1-01: Developer and QA Command-Line Interface (CLI) Parity', () =>
       expect(probe.status).toBe(0);
       const resolvedSpecifiers = JSON.parse(probe.stdout.trim()) as string[];
       expect(resolvedSpecifiers).not.toContain('vitest');
+    });
+  });
+
+  describe('Scenario 12: App Health Telemetry and Verdicts (Feature C-9)', () => {
+    const buildSyntheticMessage = (id: string): Message => ({
+      id,
+      network: 'fake',
+      account: 'rep-synthetic-01',
+      thread: 'chat-synthetic-01',
+      threadKind: 'dm',
+      direction: 'inbound',
+      time: '2026-11-06T10:00:00.000Z',
+      from: { accountId: 'cust-synthetic-01', displayName: 'Synthetic Buyer' },
+      to: [{ accountId: 'rep-synthetic-01', displayName: 'Synthetic Rep' }],
+      text: 'Synthetic order confirmation message.',
+    });
+
+    beforeEach(() => {
+      vi.spyOn(process, 'cpuUsage').mockImplementation((prev?: NodeJS.CpuUsage) => {
+        if (prev) {
+          return { user: 500, system: 500 };
+        }
+        return { user: 10_000, system: 5_000 };
+      });
+      vi.spyOn(process, 'memoryUsage').mockReturnValue({
+        rss: 120 * 1024 * 1024,
+        heapTotal: 80 * 1024 * 1024,
+        heapUsed: 60 * 1024 * 1024,
+        external: 2 * 1024 * 1024,
+        arrayBuffers: 1 * 1024 * 1024,
+      });
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('exports named threshold constants matching ADR 0013 and spec C-9', () => {
+      expect(CPU_SAMPLE_INTERVAL_MS).toBe(100);
+      expect(CPU_SLOW_PERCENT).toBe(5);
+      expect(CPU_PROBLEM_PERCENT).toBe(15);
+      expect(MEMORY_SLOW_MB).toBe(250);
+      expect(MEMORY_PROBLEM_MB).toBe(400);
+      expect(QUEUE_SLOW_THRESHOLD).toBe(100);
+      expect(QUEUE_WAIT_SLOW_SECONDS).toBe(30);
+      expect(SINK_DOWN_HALT_MS).toBe(5 * 60 * 1000);
+      expect(ERROR_WINDOW_MS).toBe(15 * 60 * 1000);
+      expect(MESSAGE_RATE_WINDOW_MS).toBe(60 * 1000);
+    });
+
+    it('reports cpuPercent, messagesPerMinute, errorCount, RSS memory, and health: good when healthy', async () => {
+      const cpuSpy = vi.spyOn(process, 'cpuUsage');
+      const jsonRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      expect(jsonRes.exitCode).toBe(0);
+
+      const parsed = JSON.parse(jsonRes.stdout);
+      expect(typeof parsed.telemetry.cpuPercent).toBe('number');
+      expect(parsed.telemetry.cpuPercent).toBeGreaterThanOrEqual(0);
+      expect(parsed.telemetry.cpuPercent).toBeLessThan(CPU_SLOW_PERCENT);
+      expect(parsed.telemetry.memoryUsageMb).toBe(120);
+      expect(parsed.telemetry.messagesPerMinute).toBe(0);
+      expect(parsed.telemetry.errorCount).toBe(0);
+      expect(parsed.telemetry.health).toBe('good');
+
+      // Verify process.cpuUsage was sampled twice (initial reading and differential reading)
+      expect(cpuSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(cpuSpy.mock.calls[1]?.[0]).toEqual({ user: 10_000, system: 5_000 });
+
+      const textRes = await executeCli(['status'], { dataDir: tempDir });
+      expect(textRes.exitCode).toBe(0);
+      const healthLines = textRes.stdout.split('\n').filter((l) => l.startsWith('App health:'));
+      expect(healthLines).toEqual(['App health: good']);
+    });
+
+    it('computes messagesPerMinute from recent outbox messages and ignores messages older than 1 minute', async () => {
+      const archiveDir = path.join(tempDir, 'archive');
+      await executeCli(['sink', 'add', 'archive', archiveDir, '--json'], { dataDir: tempDir });
+
+      const realNow = Date.now();
+      const nowSpy = vi.spyOn(Date, 'now');
+      const ctx = new CliContext(tempDir);
+      const outbox = ctx.getOutbox();
+
+      try {
+        // Message from 3 minutes ago (outside 1-minute rate window)
+        nowSpy.mockReturnValue(realNow - 3 * 60 * 1000);
+        await outbox.enqueue(buildSyntheticMessage('msg-old-1'), ['archive']);
+
+        // Three messages within the last 60 seconds
+        nowSpy.mockReturnValue(realNow - 20 * 1000);
+        await outbox.enqueue(buildSyntheticMessage('msg-recent-1'), ['archive']);
+        await outbox.enqueue(buildSyntheticMessage('msg-recent-2'), ['archive']);
+        await outbox.enqueue(buildSyntheticMessage('msg-recent-3'), ['archive']);
+
+        const pending = await outbox.getPendingDeliveries('archive', 10, realNow);
+        for (const item of pending) {
+          await outbox.markDelivered(item.deliveryId);
+        }
+      } finally {
+        outbox.close();
+        ctx.close();
+        nowSpy.mockRestore();
+      }
+
+      const res = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const parsed = JSON.parse(res.stdout);
+      expect(parsed.telemetry.messagesPerMinute).toBe(3);
+      expect(parsed.telemetry.errorCount).toBe(0);
+      expect(parsed.telemetry.health).toBe('good');
+    });
+
+    it('reports slow (not problem) on a single recent refusal under 5 minutes and counts errorCount', async () => {
+      const archiveDir = path.join(tempDir, 'archive');
+      await executeCli(['sink', 'add', 'archive', archiveDir, '--json'], { dataDir: tempDir });
+
+      const ctx = new CliContext(tempDir);
+      const outbox = ctx.getOutbox();
+      try {
+        await outbox.enqueue(buildSyntheticMessage('msg-refused-recent'), ['archive']);
+        const pending = await outbox.getPendingDeliveries('archive', 10, Date.now());
+        await outbox.markRefused(pending[0]!.deliveryId, 'Rejected by destination');
+      } finally {
+        outbox.close();
+        ctx.close();
+      }
+
+      const jsonRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const parsed = JSON.parse(jsonRes.stdout);
+      expect(parsed.telemetry.errorCount).toBe(1);
+      expect(parsed.outbox.archive.deadLetterCount).toBe(1);
+      expect(parsed.sinks.archive.health).toBe('degraded');
+      expect(parsed.telemetry.health).toBe('slow');
+
+      const textRes = await executeCli(['status'], { dataDir: tempDir });
+      expect(textRes.stdout.split('\n')).toContain('App health: slow');
+    });
+
+    it('reports problem when a sink has halted delivery due to permanent errors for more than 5 minutes', async () => {
+      const archiveDir = path.join(tempDir, 'archive');
+      await executeCli(['sink', 'add', 'archive', archiveDir, '--json'], { dataDir: tempDir });
+
+      const realNow = Date.now();
+      const nowSpy = vi.spyOn(Date, 'now');
+      const ctx = new CliContext(tempDir);
+      const outbox = ctx.getOutbox();
+
+      try {
+        nowSpy.mockReturnValue(realNow - 6 * 60 * 1000);
+        await outbox.enqueue(buildSyntheticMessage('msg-halt-1'), ['archive']);
+        const firstBatch = await outbox.getPendingDeliveries('archive', 10, realNow);
+        await outbox.markRefused(firstBatch[0]!.deliveryId, 'Destination credentials revoked');
+
+        nowSpy.mockReturnValue(realNow - 1 * 60 * 1000);
+        await outbox.enqueue(buildSyntheticMessage('msg-halt-2'), ['archive']);
+        const secondBatch = await outbox.getPendingDeliveries('archive', 10, realNow);
+        await outbox.markRefused(secondBatch[0]!.deliveryId, 'Destination credentials revoked');
+      } finally {
+        outbox.close();
+        ctx.close();
+        nowSpy.mockRestore();
+      }
+
+      const jsonRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const parsed = JSON.parse(jsonRes.stdout);
+      expect(parsed.telemetry.errorCount).toBe(2);
+      expect(parsed.sinks.archive.health).toBe('down');
+      expect(parsed.telemetry.health).toBe('problem');
+
+      const textRes = await executeCli(['status'], { dataDir: tempDir });
+      expect(textRes.stdout.split('\n')).toContain('App health: problem');
+    });
+
+    it('ignores refused deliveries older than 15 minutes and recovers sink health after a subsequent delivery', async () => {
+      const archiveDir = path.join(tempDir, 'archive');
+      await executeCli(['sink', 'add', 'archive', archiveDir, '--json'], { dataDir: tempDir });
+
+      const realNow = Date.now();
+      const nowSpy = vi.spyOn(Date, 'now');
+      const ctx = new CliContext(tempDir);
+      const outbox = ctx.getOutbox();
+
+      try {
+        // Refusal 20 minutes ago (outside the 15-minute window)
+        nowSpy.mockReturnValue(realNow - 20 * 60 * 1000);
+        await outbox.enqueue(buildSyntheticMessage('msg-20m-old'), ['archive']);
+        const oldBatch = await outbox.getPendingDeliveries('archive', 10, realNow);
+        await outbox.markRefused(oldBatch[0]!.deliveryId, 'Expired token 20m ago');
+      } finally {
+        outbox.close();
+        ctx.close();
+        nowSpy.mockRestore();
+      }
+
+      const afterOldRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const afterOldParsed = JSON.parse(afterOldRes.stdout);
+      expect(afterOldParsed.telemetry.errorCount).toBe(0);
+      expect(afterOldParsed.sinks.archive.health).toBe('ok');
+      expect(afterOldParsed.telemetry.health).toBe('good');
+
+      // Now add a 6-minute-old refusal followed by a successful delivery 1 minute ago
+      const nowSpy2 = vi.spyOn(Date, 'now');
+      const ctx2 = new CliContext(tempDir);
+      const outbox2 = ctx2.getOutbox();
+      try {
+        nowSpy2.mockReturnValue(realNow - 6 * 60 * 1000);
+        await outbox2.enqueue(buildSyntheticMessage('msg-6m-refused'), ['archive']);
+        const refusedBatch = await outbox2.getPendingDeliveries('archive', 10, realNow);
+        await outbox2.markRefused(refusedBatch[0]!.deliveryId, 'Temporary rejection');
+
+        nowSpy2.mockReturnValue(realNow - 1 * 60 * 1000);
+        await outbox2.enqueue(buildSyntheticMessage('msg-1m-delivered'), ['archive']);
+        const deliveredBatch = await outbox2.getPendingDeliveries('archive', 10, realNow);
+        await outbox2.markDelivered(deliveredBatch[0]!.deliveryId);
+      } finally {
+        outbox2.close();
+        ctx2.close();
+        nowSpy2.mockRestore();
+      }
+
+      const recoveredRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const recoveredParsed = JSON.parse(recoveredRes.stdout);
+      expect(recoveredParsed.telemetry.errorCount).toBe(1);
+      expect(recoveredParsed.sinks.archive.health).toBe('ok');
+      expect(recoveredParsed.telemetry.health).toBe('good');
+    });
+
+    it('reports slow when a sink is in transient retry backoff (HTTP 429) or disabled', async () => {
+      const archiveDir = path.join(tempDir, 'archive');
+      await executeCli(['sink', 'add', 'archive', archiveDir, '--json'], { dataDir: tempDir });
+
+      const ctx = new CliContext(tempDir);
+      const outbox = ctx.getOutbox();
+      try {
+        await outbox.enqueue(buildSyntheticMessage('msg-429'), ['archive']);
+        const pending = await outbox.getPendingDeliveries('archive', 10, Date.now());
+        await outbox.markFailed(
+          pending[0]!.deliveryId,
+          'Rate limit exceeded (HTTP 429)',
+          Date.now() + 30_000
+        );
+      } finally {
+        outbox.close();
+        ctx.close();
+      }
+
+      const backoffRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const backoffParsed = JSON.parse(backoffRes.stdout);
+      expect(backoffParsed.sinks.archive.health).toBe('degraded');
+      expect(backoffParsed.telemetry.health).toBe('slow');
+    });
+
+    it('reports slow when queue depth exceeds 100 messages or oldest pending message waits over 30 seconds', async () => {
+      const archiveDir = path.join(tempDir, 'archive');
+      await executeCli(['sink', 'add', 'archive', archiveDir, '--json'], { dataDir: tempDir });
+
+      const realNow = Date.now();
+      const nowSpy = vi.spyOn(Date, 'now');
+      const ctx = new CliContext(tempDir);
+      const outbox = ctx.getOutbox();
+
+      try {
+        // 1 pending message waiting for 45 seconds (> 30s threshold)
+        nowSpy.mockReturnValue(realNow - 45 * 1000);
+        await outbox.enqueue(buildSyntheticMessage('msg-wait-45s'), ['archive']);
+      } finally {
+        outbox.close();
+        ctx.close();
+        nowSpy.mockRestore();
+      }
+
+      const ageRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const ageParsed = JSON.parse(ageRes.stdout);
+      expect(ageParsed.outbox.archive.oldestPendingAgeSeconds).toBeGreaterThanOrEqual(45);
+      expect(ageParsed.sinks.archive.health).toBe('degraded');
+      expect(ageParsed.telemetry.health).toBe('slow');
+
+      // Clear the old message and enqueue 101 fresh messages (> 100 queue threshold)
+      const ctx2 = new CliContext(tempDir);
+      const outbox2 = ctx2.getOutbox();
+      try {
+        const oldPending = await outbox2.getPendingDeliveries('archive', 10, Date.now());
+        for (const item of oldPending) {
+          await outbox2.markDelivered(item.deliveryId);
+        }
+        for (let i = 0; i < 101; i++) {
+          await outbox2.enqueue(buildSyntheticMessage(`msg-burst-${i}`), ['archive']);
+        }
+      } finally {
+        outbox2.close();
+        ctx2.close();
+      }
+
+      const depthRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const depthParsed = JSON.parse(depthRes.stdout);
+      expect(depthParsed.outbox.archive.pendingCount).toBe(101);
+      expect(depthParsed.sinks.archive.health).toBe('degraded');
+      expect(depthParsed.telemetry.health).toBe('slow');
+    });
+
+    it('evaluates memory (RSS) thresholds: under 250 MB good, 250 to 400 MB slow, over 400 MB problem', async () => {
+      // 300 MB RSS -> slow
+      vi.spyOn(process, 'memoryUsage').mockReturnValue({
+        rss: 300 * 1024 * 1024,
+        heapTotal: 100 * 1024 * 1024,
+        heapUsed: 80 * 1024 * 1024,
+        external: 0,
+        arrayBuffers: 0,
+      });
+
+      const slowRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const slowParsed = JSON.parse(slowRes.stdout);
+      expect(slowParsed.telemetry.memoryUsageMb).toBe(300);
+      expect(slowParsed.telemetry.health).toBe('slow');
+
+      // 450 MB RSS -> problem
+      vi.spyOn(process, 'memoryUsage').mockReturnValue({
+        rss: 450 * 1024 * 1024,
+        heapTotal: 150 * 1024 * 1024,
+        heapUsed: 120 * 1024 * 1024,
+        external: 0,
+        arrayBuffers: 0,
+      });
+
+      const problemRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const problemParsed = JSON.parse(problemRes.stdout);
+      expect(problemParsed.telemetry.memoryUsageMb).toBe(450);
+      expect(problemParsed.telemetry.health).toBe('problem');
+    });
+
+    it('evaluates CPU thresholds: 5% to 15% slow, over 15% problem', async () => {
+      // ~10% CPU over 100ms (10,000 us out of 100,000 us) -> slow
+      vi.spyOn(process, 'cpuUsage').mockImplementation((prev?: NodeJS.CpuUsage) => {
+        if (prev) {
+          return { user: 8_000, system: 2_000 };
+        }
+        return { user: 0, system: 0 };
+      });
+
+      const slowRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const slowParsed = JSON.parse(slowRes.stdout);
+      expect(slowParsed.telemetry.cpuPercent).toBeGreaterThanOrEqual(CPU_SLOW_PERCENT);
+      expect(slowParsed.telemetry.cpuPercent).toBeLessThanOrEqual(CPU_PROBLEM_PERCENT);
+      expect(slowParsed.telemetry.health).toBe('slow');
+
+      // ~40% CPU over 100ms (40,000 us out of 100,000 us) -> problem
+      vi.spyOn(process, 'cpuUsage').mockImplementation((prev?: NodeJS.CpuUsage) => {
+        if (prev) {
+          return { user: 30_000, system: 10_000 };
+        }
+        return { user: 0, system: 0 };
+      });
+
+      const problemRes = await executeCli(['status', '--json'], { dataDir: tempDir });
+      const problemParsed = JSON.parse(problemRes.stdout);
+      expect(problemParsed.telemetry.cpuPercent).toBeGreaterThan(CPU_PROBLEM_PERCENT);
+      expect(problemParsed.telemetry.health).toBe('problem');
     });
   });
 });
