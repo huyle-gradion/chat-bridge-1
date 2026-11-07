@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "issue": 17,
+  "title": "status reports app health: CPU, messages per minute, errors and a verdict",
+  "labels": [
+    "agent:ready",
+    "agent:pr-open"
+  ],
+  "runner": "antigravity-cli",
+  "model": "gemini-4-argon-high",
+  "startedAt": "2026-11-07T12:34:05.846Z",
+  "finishedAt": "2026-11-07T12:48:13.761Z",
+  "outcome": "plan-ready",
+  "phases": [
+    {
+      "phase": "red",
+      "passed": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "agentExitCode": 0,
+          "usage": {
+            "input": 2903231,
+            "cachedInput": 2714966,
+            "output": 49627,
+            "total": 2952858,
+            "requests": 28
+          },
+          "toolCalls": {
+            "read_file": 46,
+            "run_command": 12,
+            "edit_file": 3
+          },
+          "gates": [
+            {
+              "name": "test",
+              "status": "fail",
+              "durationMs": 4601
+            }
+          ],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": []
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input": 2903231,
+    "cachedInput": 2714966,
+    "output": 49627,
+    "total": 2952858,
+    "requests": 28
+  },
+  "costUsd": 1.1443,
+  "caughtBy": [],
+  "firstPass": true,
+  "stage": "plan"
+}
