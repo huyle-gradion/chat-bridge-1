@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -151,6 +151,103 @@ describe('US-C3-01: Encrypted Local Outbox & Crash Resilience', () => {
       expect(pending[1]?.message.id).toBe('msg-crash-2');
 
       recoveredOutbox.close();
+    });
+  });
+
+  describe('Health & Telemetry Read Queries (Feature C-9)', () => {
+    it('reads per-sink queue stats, oldest pending age, retry counts, and recent failure age', async () => {
+      const baseNow = 1_700_000_000_000;
+      const nowSpy = vi.spyOn(Date, 'now');
+
+      try {
+        // Enqueue a refused message 6 minutes ago
+        nowSpy.mockReturnValue(baseNow - 6 * 60 * 1000);
+        await outbox.enqueue({ ...sampleMessage, id: 'msg-refused-1' }, ['sink-margince']);
+        const refusedBatch = await outbox.getPendingDeliveries('sink-margince', 10, baseNow);
+        await outbox.markRefused(refusedBatch[0]!.deliveryId, 'Invalid destination key');
+
+        // Enqueue a pending message 45 seconds ago that failed transiently
+        nowSpy.mockReturnValue(baseNow - 45 * 1000);
+        await outbox.enqueue({ ...sampleMessage, id: 'msg-pending-1' }, ['sink-margince']);
+        const pendingBatch = await outbox.getPendingDeliveries('sink-margince', 10, baseNow);
+        await outbox.markFailed(
+          pendingBatch[0]!.deliveryId,
+          'Rate limit exceeded (HTTP 429)',
+          baseNow + 15_000
+        );
+
+        const stats = await outbox.getSinkStats('sink-margince', baseNow, 15 * 60 * 1000);
+        expect(stats.pendingCount).toBe(1);
+        expect(stats.inFlightCount).toBe(0);
+        expect(stats.deadLetterCount).toBe(1);
+        expect(stats.oldestPendingAgeSeconds).toBe(45);
+        expect(stats.retryingCount).toBe(1);
+        expect(stats.unrecoveredFailureCount).toBe(1);
+        expect(stats.oldestUnrecoveredFailureAgeMs).toBe(6 * 60 * 1000);
+        expect(stats.lastError).toBeDefined();
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
+
+    it('ignores failures older than the 15-minute window and resets unrecovered failures after a delivery', async () => {
+      const baseNow = 1_700_000_000_000;
+      const nowSpy = vi.spyOn(Date, 'now');
+
+      try {
+        // Refusal 20 minutes ago (outside 15-minute window)
+        nowSpy.mockReturnValue(baseNow - 20 * 60 * 1000);
+        await outbox.enqueue({ ...sampleMessage, id: 'msg-old-refused' }, ['sink-margince']);
+        const oldBatch = await outbox.getPendingDeliveries('sink-margince', 10, baseNow);
+        await outbox.markRefused(oldBatch[0]!.deliveryId, 'Stale error');
+
+        const afterOldStats = await outbox.getSinkStats('sink-margince', baseNow, 15 * 60 * 1000);
+        expect(afterOldStats.deadLetterCount).toBe(0);
+        expect(afterOldStats.unrecoveredFailureCount).toBe(0);
+        expect(afterOldStats.oldestUnrecoveredFailureAgeMs).toBe(0);
+        expect(await outbox.getRecentErrorCount(15 * 60 * 1000, baseNow)).toBe(0);
+
+        // Refusal 6 minutes ago followed by a successful delivery 2 minutes ago
+        nowSpy.mockReturnValue(baseNow - 6 * 60 * 1000);
+        await outbox.enqueue({ ...sampleMessage, id: 'msg-refused-recent' }, ['sink-margince']);
+        const recentBatch = await outbox.getPendingDeliveries('sink-margince', 10, baseNow);
+        await outbox.markRefused(recentBatch[0]!.deliveryId, 'Temporary auth issue');
+
+        nowSpy.mockReturnValue(baseNow - 2 * 60 * 1000);
+        await outbox.enqueue({ ...sampleMessage, id: 'msg-delivered-after' }, ['sink-margince']);
+        const okBatch = await outbox.getPendingDeliveries('sink-margince', 10, baseNow);
+        await outbox.markDelivered(okBatch[0]!.deliveryId);
+
+        const recoveredStats = await outbox.getSinkStats('sink-margince', baseNow, 15 * 60 * 1000);
+        expect(recoveredStats.deadLetterCount).toBe(1);
+        expect(recoveredStats.unrecoveredFailureCount).toBe(0);
+        expect(recoveredStats.oldestUnrecoveredFailureAgeMs).toBe(0);
+        expect(await outbox.getRecentErrorCount(15 * 60 * 1000, baseNow)).toBe(1);
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
+
+    it('counts messages enqueued within the last minute for messagesPerMinute', async () => {
+      const baseNow = 1_700_000_000_000;
+      const nowSpy = vi.spyOn(Date, 'now');
+
+      try {
+        // Message from 3 minutes ago (outside 1-minute window)
+        nowSpy.mockReturnValue(baseNow - 3 * 60 * 1000);
+        await outbox.enqueue({ ...sampleMessage, id: 'msg-3m-ago' }, ['sink-margince']);
+
+        // Two messages within the last 60 seconds
+        nowSpy.mockReturnValue(baseNow - 30 * 1000);
+        await outbox.enqueue({ ...sampleMessage, id: 'msg-30s-ago' }, ['sink-margince']);
+        nowSpy.mockReturnValue(baseNow - 5 * 1000);
+        await outbox.enqueue({ ...sampleMessage, id: 'msg-5s-ago' }, ['sink-margince']);
+
+        const recentMessages = await outbox.getRecentMessageCount(60 * 1000, baseNow);
+        expect(recentMessages).toBe(2);
+      } finally {
+        nowSpy.mockRestore();
+      }
     });
   });
 });

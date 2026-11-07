@@ -56,6 +56,7 @@ export class Outbox {
         next_retry_at INTEGER NOT NULL DEFAULT 0,
         last_error TEXT,
         delivered_at INTEGER,
+        updated_at INTEGER NOT NULL DEFAULT 0,
         UNIQUE(message_id, sink_id),
         FOREIGN KEY(message_id) REFERENCES messages(id) ON DELETE CASCADE
       );
@@ -63,6 +64,11 @@ export class Outbox {
       CREATE INDEX IF NOT EXISTS idx_sink_deliveries_pending 
       ON sink_deliveries(sink_id, status, next_retry_at);
     `);
+
+    const cols = this.db.pragma('table_info(sink_deliveries)') as Array<{ name: string }>;
+    if (!cols.some((c) => c.name === 'updated_at')) {
+      this.db.exec('ALTER TABLE sink_deliveries ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0');
+    }
   }
 
   public async enqueue(message: Message, sinkIds: string[]): Promise<void> {
@@ -75,15 +81,15 @@ export class Outbox {
     `);
 
     const insertDeliveryStmt = this.db.prepare(`
-      INSERT OR IGNORE INTO sink_deliveries (message_id, sink_id, status, attempts, next_retry_at)
-      VALUES (?, ?, 'pending', 0, 0)
+      INSERT OR IGNORE INTO sink_deliveries (message_id, sink_id, status, attempts, next_retry_at, updated_at)
+      VALUES (?, ?, 'pending', 0, 0, ?)
     `);
 
     const transaction = this.db.transaction(() => {
       insertMsgStmt.run(message.id, message.network, message.time, ciphertext, iv, tag, now);
 
       for (const sinkId of sinkIds) {
-        insertDeliveryStmt.run(message.id, sinkId);
+        insertDeliveryStmt.run(message.id, sinkId, now);
       }
     });
 
@@ -124,12 +130,13 @@ export class Outbox {
   }
 
   public async markDelivered(deliveryId: number): Promise<void> {
+    const now = Date.now();
     const stmt = this.db.prepare(`
       UPDATE sink_deliveries
-      SET status = 'delivered', delivered_at = ?
+      SET status = 'delivered', delivered_at = ?, updated_at = ?
       WHERE id = ?
     `);
-    stmt.run(Date.now(), deliveryId);
+    stmt.run(now, now, deliveryId);
   }
 
   public async markFailed(
@@ -137,24 +144,28 @@ export class Outbox {
     error: string,
     nextRetryAt: number = Date.now() + 5000
   ): Promise<void> {
+    const now = Date.now();
     const stmt = this.db.prepare(`
       UPDATE sink_deliveries
       SET attempts = attempts + 1,
           last_error = ?,
-          next_retry_at = ?
+          next_retry_at = ?,
+          updated_at = ?
       WHERE id = ?
     `);
-    stmt.run(error, nextRetryAt, deliveryId);
+    stmt.run(error, nextRetryAt, now, deliveryId);
   }
 
   public async markRefused(deliveryId: number, reason: string): Promise<void> {
+    const now = Date.now();
     const stmt = this.db.prepare(`
       UPDATE sink_deliveries
       SET status = 'refused',
-          last_error = ?
+          last_error = ?,
+          updated_at = ?
       WHERE id = ?
     `);
-    stmt.run(reason, deliveryId);
+    stmt.run(reason, now, deliveryId);
   }
 
   public async getQueueCount(sinkId?: string): Promise<number> {
@@ -175,6 +186,182 @@ export class Outbox {
     `);
     const result = stmt.get() as { count: number };
     return result.count;
+  }
+
+  public async getSinkStats(
+    sinkId: string,
+    asOfTime: number = Date.now(),
+    errorWindowMs: number = 15 * 60 * 1000
+  ): Promise<{
+    pendingCount: number;
+    inFlightCount: number;
+    deadLetterCount: number;
+    oldestPendingAgeSeconds: number;
+    retryingCount: number;
+    unrecoveredFailureCount: number;
+    oldestUnrecoveredFailureAgeMs: number;
+    lastError?: string | undefined;
+  }> {
+    const cutoff = asOfTime - errorWindowMs;
+
+    const pendingRow = this.db
+      .prepare(
+        `
+        SELECT
+          COUNT(*) AS pending_count,
+          MIN(m.created_at) AS min_created_at,
+          SUM(CASE WHEN d.attempts > 0 OR d.next_retry_at > ? THEN 1 ELSE 0 END) AS retrying_count
+        FROM sink_deliveries d
+        JOIN messages m ON d.message_id = m.id
+        WHERE d.sink_id = ? AND d.status = 'pending'
+      `
+      )
+      .get(asOfTime, sinkId) as {
+      pending_count: number;
+      min_created_at: number | null;
+      retrying_count: number | null;
+    };
+
+    const inFlightRow = this.db
+      .prepare(
+        `
+        SELECT COUNT(*) AS count
+        FROM sink_deliveries
+        WHERE sink_id = ? AND status = 'in_flight'
+      `
+      )
+      .get(sinkId) as { count: number };
+
+    const deadLetterRow = this.db
+      .prepare(
+        `
+        SELECT COUNT(*) AS count
+        FROM sink_deliveries d
+        JOIN messages m ON d.message_id = m.id
+        WHERE d.sink_id = ?
+          AND d.status = 'refused'
+          AND (CASE WHEN d.updated_at > 0 THEN d.updated_at ELSE m.created_at END) >= ?
+      `
+      )
+      .get(sinkId, cutoff) as { count: number };
+
+    const lastDeliveredRow = this.db
+      .prepare(
+        `
+        SELECT MAX(delivered_at) AS last_delivered_at
+        FROM sink_deliveries
+        WHERE sink_id = ? AND status = 'delivered'
+      `
+      )
+      .get(sinkId) as { last_delivered_at: number | null };
+
+    const unrecoveredRow =
+      lastDeliveredRow.last_delivered_at !== null
+        ? (this.db
+            .prepare(
+              `
+              SELECT
+                COUNT(*) AS count,
+                MIN(CASE WHEN d.updated_at > 0 THEN d.updated_at ELSE m.created_at END) AS oldest_ts
+              FROM sink_deliveries d
+              JOIN messages m ON d.message_id = m.id
+              WHERE d.sink_id = ?
+                AND d.status = 'refused'
+                AND (CASE WHEN d.updated_at > 0 THEN d.updated_at ELSE m.created_at END) >= ?
+                AND (CASE WHEN d.updated_at > 0 THEN d.updated_at ELSE m.created_at END) > ?
+            `
+            )
+            .get(sinkId, cutoff, lastDeliveredRow.last_delivered_at) as {
+            count: number;
+            oldest_ts: number | null;
+          })
+        : (this.db
+            .prepare(
+              `
+              SELECT
+                COUNT(*) AS count,
+                MIN(CASE WHEN d.updated_at > 0 THEN d.updated_at ELSE m.created_at END) AS oldest_ts
+              FROM sink_deliveries d
+              JOIN messages m ON d.message_id = m.id
+              WHERE d.sink_id = ?
+                AND d.status = 'refused'
+                AND (CASE WHEN d.updated_at > 0 THEN d.updated_at ELSE m.created_at END) >= ?
+            `
+            )
+            .get(sinkId, cutoff) as {
+            count: number;
+            oldest_ts: number | null;
+          });
+
+    const lastErrorRow = this.db
+      .prepare(
+        `
+        SELECT d.last_error AS last_error
+        FROM sink_deliveries d
+        JOIN messages m ON d.message_id = m.id
+        WHERE d.sink_id = ?
+          AND d.last_error IS NOT NULL
+          AND (
+            (d.status = 'refused' AND (CASE WHEN d.updated_at > 0 THEN d.updated_at ELSE m.created_at END) >= ?)
+            OR (d.status = 'pending' AND d.attempts > 0)
+          )
+        ORDER BY (CASE WHEN d.updated_at > 0 THEN d.updated_at ELSE m.created_at END) DESC, d.id DESC
+        LIMIT 1
+      `
+      )
+      .get(sinkId, cutoff) as { last_error: string } | undefined;
+
+    const pendingCount = pendingRow.pending_count ?? 0;
+    const oldestPendingAgeSeconds =
+      pendingCount > 0 && pendingRow.min_created_at !== null
+        ? Math.max(0, Math.floor((asOfTime - pendingRow.min_created_at) / 1000))
+        : 0;
+    const unrecoveredFailureCount = unrecoveredRow.count ?? 0;
+    const oldestUnrecoveredFailureAgeMs =
+      unrecoveredFailureCount > 0 && unrecoveredRow.oldest_ts !== null
+        ? Math.max(0, asOfTime - unrecoveredRow.oldest_ts)
+        : 0;
+
+    return {
+      pendingCount,
+      inFlightCount: inFlightRow.count ?? 0,
+      deadLetterCount: deadLetterRow.count ?? 0,
+      oldestPendingAgeSeconds,
+      retryingCount: pendingRow.retrying_count ?? 0,
+      unrecoveredFailureCount,
+      oldestUnrecoveredFailureAgeMs,
+      ...(lastErrorRow?.last_error ? { lastError: lastErrorRow.last_error } : {}),
+    };
+  }
+
+  public async getRecentErrorCount(
+    windowMs: number = 15 * 60 * 1000,
+    asOfTime: number = Date.now()
+  ): Promise<number> {
+    const cutoff = asOfTime - windowMs;
+    const stmt = this.db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM sink_deliveries d
+      JOIN messages m ON d.message_id = m.id
+      WHERE d.status = 'refused'
+        AND (CASE WHEN d.updated_at > 0 THEN d.updated_at ELSE m.created_at END) >= ?
+    `);
+    const result = stmt.get(cutoff) as { count: number };
+    return result.count ?? 0;
+  }
+
+  public async getRecentMessageCount(
+    windowMs: number = 60 * 1000,
+    asOfTime: number = Date.now()
+  ): Promise<number> {
+    const cutoff = asOfTime - windowMs;
+    const stmt = this.db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM messages
+      WHERE created_at >= ?
+    `);
+    const result = stmt.get(cutoff) as { count: number };
+    return result.count ?? 0;
   }
 
   public async isMessageDelivered(messageId: string): Promise<boolean> {
