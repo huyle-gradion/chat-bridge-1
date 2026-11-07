@@ -25,6 +25,62 @@ export interface CliExecutionResult {
 
 const VERSION = '0.1.0';
 
+const KNOWN_COMMANDS = [
+  'status',
+  'chats',
+  'filters',
+  'login',
+  'sink',
+  'run',
+  'history',
+  'ui',
+] as const;
+
+function editDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array<number>(n + 1).fill(0));
+
+  for (let i = 0; i <= m; i++) {
+    dp[i]![0] = i;
+  }
+  for (let j = 0; j <= n; j++) {
+    dp[0]![j] = j;
+  }
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i]![j] = Math.min(
+        dp[i - 1]![j]! + 1,
+        dp[i]![j - 1]! + 1,
+        dp[i - 1]![j - 1]! + cost
+      );
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        dp[i]![j] = Math.min(dp[i]![j]!, dp[i - 2]![j - 2]! + 1);
+      }
+    }
+  }
+
+  return dp[m]![n]!;
+}
+
+function findClosestCommand(input: string, maxDistance = 2): string | undefined {
+  const normalized = input.toLowerCase();
+  let bestMatch: string | undefined;
+  let bestDistance = maxDistance + 1;
+
+  for (const cmd of KNOWN_COMMANDS) {
+    const dist = editDistance(normalized, cmd);
+    if (dist <= maxDistance && dist < bestDistance) {
+      bestDistance = dist;
+      bestMatch = cmd;
+    }
+  }
+
+  return bestMatch;
+}
+
 const HELP_TEXT = `Chat Bridge CLI - Universal Messaging Connector
 
 Usage:
@@ -129,12 +185,18 @@ export async function executeCli(
         break;
 
       default: {
-        const errorMsg = `Unknown command: "${command}". Run "chat-bridge --help" for available commands.`;
+        const suggestion = command ? findClosestCommand(command) : undefined;
+        const errorMsg = suggestion
+          ? `Unknown command: "${command}". Did you mean "${suggestion}"? Run "chat-bridge --help" for available commands.`
+          : `Unknown command: "${command}". Run "chat-bridge --help" for available commands.`;
         if (isJson) {
+          const errorObj = suggestion
+            ? { error: errorMsg, suggestion }
+            : { error: errorMsg };
           return {
             exitCode: 1,
             stdout: '',
-            stderr: JSON.stringify({ error: errorMsg }, null, 2),
+            stderr: JSON.stringify(errorObj, null, 2),
           };
         }
         return {

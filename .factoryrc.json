@@ -12,25 +12,49 @@
     "boundaries": [
       {
         "package": "packages/types",
-        "disallowImportsFrom": ["packages/engine", "packages/sources", "packages/sinks", "packages/testing"]
+        "disallowImportsFrom": [
+          "packages/engine",
+          "packages/sources",
+          "packages/sinks",
+          "packages/testing"
+        ]
       },
       {
         "package": "packages/engine",
-        "disallowImportsFrom": ["packages/sources", "packages/sinks"]
+        "disallowImportsFrom": [
+          "packages/sources",
+          "packages/sinks"
+        ]
       },
       {
         "package": "packages/sources",
-        "disallowImportsFrom": ["packages/sinks"]
+        "disallowImportsFrom": [
+          "packages/sinks"
+        ]
       },
       {
         "package": "packages/sinks",
-        "disallowImportsFrom": ["packages/sources"]
+        "disallowImportsFrom": [
+          "packages/sources"
+        ]
       }
     ],
     "plainLanguage": {
       "enabled": true,
-      "targetDirs": ["packages/ui", "packages/i18n", "packages/locales"],
-      "forbiddenTerms": ["sink", "outbox", "jid", "regex", "daemon", "payload", "stdout"],
+      "targetDirs": [
+        "packages/ui",
+        "packages/i18n",
+        "packages/locales"
+      ],
+      "forbiddenTerms": [
+        "sink",
+        "outbox",
+        "jid",
+        "regex",
+        "daemon",
+        "payload",
+        "stdout"
+      ],
       "disallowEmDashes": true,
       "disallowEmojis": true
     },
@@ -52,5 +76,86 @@
     "targetCoverage": 85,
     "maxSuiteDurationMs": 2000,
     "requireSyntheticScenarios": true
+  },
+  "agent": {
+    "runner": "antigravity-cli",
+    "model": "gemini-4-argon-high",
+    "context": [
+      ".agents/rules/AGENTS.md",
+      "docs/spec.md",
+      "docs/decisions.md"
+    ],
+    "setup": "pnpm install --frozen-lockfile",
+    "gates": [
+      {
+        "name": "build",
+        "run": "pnpm build",
+        "timeoutMs": 300000
+      },
+      {
+        "name": "guard",
+        "run": "pnpm guard",
+        "timeoutMs": 300000
+      },
+      {
+        "name": "test",
+        "run": "pnpm test",
+        "timeoutMs": 600000
+      }
+    ],
+    "tdd": {
+      "redGate": "test"
+    },
+    "protectedPaths": [
+      "guards/**",
+      "e2e/**",
+      "bench/**",
+      ".agents/**",
+      "AGENTS.md",
+      "spec-chat-bridge.md",
+      "docs/spec.md",
+      "docs/decisions.md",
+      "docs/decisions/**",
+      "docs/harness-log.md",
+      "docs/budget.md",
+      "vitest.config.ts",
+      "tsconfig.base.json",
+      "tsconfig.json",
+      "pnpm-workspace.yaml"
+    ],
+    "maxAttempts": 3,
+    "sessionTimeoutMs": 1800000,
+    "plan": {
+      "approval": "required"
+    },
+    "review": {
+      "when": "labelled",
+      "labels": [
+        "risky",
+        "security"
+      ],
+      "maxFixRounds": 1
+    },
+    "budget": {
+      "weeklyUsd": 160,
+      "bugOnlyAt": 0.8,
+      "stopAt": 1.0,
+      "bugLabels": [
+        "bug"
+      ],
+      "utcOffset": "+07:00",
+      "pricing": {
+        "gemini-4-argon-high": {
+          "inputPerMTok": 2.0,
+          "cachedInputPerMTok": 0.1,
+          "outputPerMTok": 10.0
+        },
+        "gemini-3.8-flash-medium": {
+          "inputPerMTok": 0.75,
+          "cachedInputPerMTok": 0.075,
+          "outputPerMTok": 3.75
+        }
+      }
+    }
   }
 }

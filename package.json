@@ -14,8 +14,9 @@
     "guard:legacy": "tsx guards/run-all.ts"
   },
   "devDependencies": {
-    "@agentic-factory/guards": "link:../agentic-factory/packages/guards",
-    "@agentic-factory/harness": "link:../agentic-factory/packages/harness",
+    "@agentic-factory/guards": "^1.0.0",
+    "@agentic-factory/harness": "^1.0.0",
+    "@agentic-factory/loop": "^0.1.0",
     "@types/node": "^22.10.1",
     "@vitest/coverage-v8": "^2.1.8",
     "tsx": "^4.19.2",

@@ -17,12 +17,6 @@ jobs:
         with:
           path: chat-bridge
 
-      - name: Checkout agentic-factory
-        uses: actions/checkout@v4
-        with:
-          repository: vantrangradion/agentic-factory
-          path: agentic-factory
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -32,12 +26,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Build Factory Tooling
-        working-directory: agentic-factory
-        run: |
-          pnpm install
-          pnpm build
 
       - name: Install chat-bridge Dependencies
         working-directory: chat-bridge

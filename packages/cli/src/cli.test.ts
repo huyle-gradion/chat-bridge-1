@@ -223,4 +223,66 @@ describe('US-I1-01: Developer and QA Command-Line Interface (CLI) Parity', () =>
       expect(parsed.url).toContain('http://127.0.0.1:4173');
     });
   });
+
+  describe('Scenario 10: Mistyped command suggestions', () => {
+    it('suggests "status" for "stauts" with help hint on stderr and exit code 1', async () => {
+      const res = await executeCli(['stauts'], { dataDir: tempDir });
+      expect(res.exitCode).toBe(1);
+      expect(res.stdout).toBe('');
+      expect(res.stderr).toContain('Unknown command: "stauts". Did you mean "status"?');
+      expect(res.stderr).toContain('Run "chat-bridge --help" for available commands.');
+    });
+
+    it('suggests a known command when within 1 or 2 edits of the input', async () => {
+      const oneEdit = await executeCli(['chat'], { dataDir: tempDir });
+      expect(oneEdit.exitCode).toBe(1);
+      expect(oneEdit.stderr).toContain('Unknown command: "chat". Did you mean "chats"?');
+      expect(oneEdit.stderr).toContain('Run "chat-bridge --help" for available commands.');
+
+      const twoEdits = await executeCli(['stat'], { dataDir: tempDir });
+      expect(twoEdits.exitCode).toBe(1);
+      expect(twoEdits.stderr).toContain('Unknown command: "stat". Did you mean "status"?');
+      expect(twoEdits.stderr).toContain('Run "chat-bridge --help" for available commands.');
+    });
+
+    it('keeps the error message unchanged when no command is within 2 edits', async () => {
+      const threeEdits = await executeCli(['statusxyz'], { dataDir: tempDir });
+      expect(threeEdits.exitCode).toBe(1);
+      expect(threeEdits.stderr).toBe(
+        'Unknown command: "statusxyz". Run "chat-bridge --help" for available commands.'
+      );
+
+      const farInput = await executeCli(['unknown-command'], { dataDir: tempDir });
+      expect(farInput.exitCode).toBe(1);
+      expect(farInput.stderr).toBe(
+        'Unknown command: "unknown-command". Run "chat-bridge --help" for available commands.'
+      );
+    });
+
+    it('ignores case when matching mistyped commands', async () => {
+      const res = await executeCli(['STAUTS'], { dataDir: tempDir });
+      expect(res.exitCode).toBe(1);
+      expect(res.stderr).toContain('Did you mean "status"?');
+      expect(res.stderr).toContain('Run "chat-bridge --help" for available commands.');
+    });
+
+    it('includes suggestion field in --json error output when a suggestion exists and omits it otherwise', async () => {
+      const withSuggestion = await executeCli(['stauts', '--json'], { dataDir: tempDir });
+      expect(withSuggestion.exitCode).toBe(1);
+      expect(withSuggestion.stdout).toBe('');
+      const parsedWith = JSON.parse(withSuggestion.stderr);
+      expect(parsedWith.suggestion).toBe('status');
+      expect(parsedWith.error).toContain('Unknown command: "stauts". Did you mean "status"?');
+      expect(parsedWith.error).toContain('Run "chat-bridge --help" for available commands.');
+
+      const withoutSuggestion = await executeCli(['statusxyz', '--json'], { dataDir: tempDir });
+      expect(withoutSuggestion.exitCode).toBe(1);
+      expect(withoutSuggestion.stdout).toBe('');
+      const parsedWithout = JSON.parse(withoutSuggestion.stderr);
+      expect(parsedWithout.error).toBe(
+        'Unknown command: "statusxyz". Run "chat-bridge --help" for available commands.'
+      );
+      expect(parsedWithout).not.toHaveProperty('suggestion');
+    });
+  });
 });
