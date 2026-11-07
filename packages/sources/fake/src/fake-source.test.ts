@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describeSourceContract, ScenarioBuilder } from '@chat-bridge/testing';
 import type { Message } from '@chat-bridge/types';
 import { FakeSource } from './fake-source.js';
@@ -150,6 +152,64 @@ describe('US-S1-01: FakeSource Implementation & Contract Conformance', () => {
 
       expect(sendResult.ok).toBe(true);
       expect(sendResult.messageId).toBeDefined();
+    });
+
+    it('loads and instantiates FakeSource in a standalone Node process without loading vitest', () => {
+      const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+      const tscBinPath = path.join(repoRoot, 'node_modules/typescript/bin/tsc');
+      const fakeDistPath = path.join(repoRoot, 'packages/sources/fake/dist/index.js');
+
+      const buildRes = spawnSync(process.execPath, [tscBinPath, '--build'], {
+        cwd: repoRoot,
+        encoding: 'utf-8',
+        timeout: 60_000,
+      });
+      expect(buildRes.status).toBe(0);
+
+      const env: NodeJS.ProcessEnv = { ...process.env };
+      for (const key of Object.keys(env)) {
+        if (key.startsWith('VITEST')) {
+          delete env[key];
+        }
+      }
+
+      const fakeUrl = pathToFileURL(fakeDistPath).href;
+      const script = [
+        "import mod from 'node:module';",
+        'const resolved = [];',
+        'if (typeof mod.registerHooks === "function") {',
+        '  mod.registerHooks({',
+        '    resolve(specifier, context, nextResolve) {',
+        '      resolved.push(specifier);',
+        '      return nextResolve(specifier, context);',
+        '    }',
+        '  });',
+        '}',
+        `const { FakeSource } = await import(${JSON.stringify(fakeUrl)});`,
+        'const source = new FakeSource({ delayMs: 0 });',
+        'const chats = await source.chats();',
+        'console.log(JSON.stringify({ chatCount: chats.length, resolved }));',
+      ].join('\n');
+
+      const result = spawnSync(
+        process.execPath,
+        ['--input-type=module', '-e', script],
+        {
+          cwd: repoRoot,
+          env,
+          encoding: 'utf-8',
+          timeout: 30_000,
+        }
+      );
+
+      expect(result.stderr).not.toContain('Vitest');
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim()) as {
+        chatCount: number;
+        resolved: string[];
+      };
+      expect(parsed.chatCount).toBeGreaterThanOrEqual(3);
+      expect(parsed.resolved).not.toContain('vitest');
     });
   });
 });

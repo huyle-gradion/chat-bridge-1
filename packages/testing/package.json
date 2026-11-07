@@ -9,6 +9,18 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./scenarios": {
+      "types": "./dist/scenarios/scenario-builder.d.ts",
+      "import": "./dist/scenarios/scenario-builder.js"
+    },
+    "./scenarios/scenario-builder": {
+      "types": "./dist/scenarios/scenario-builder.d.ts",
+      "import": "./dist/scenarios/scenario-builder.js"
+    },
+    "./scenarios/scenario-builder.js": {
+      "types": "./dist/scenarios/scenario-builder.d.ts",
+      "import": "./dist/scenarios/scenario-builder.js"
     }
   },
   "scripts": {
