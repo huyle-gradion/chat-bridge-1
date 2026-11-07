@@ -7,7 +7,10 @@ import type {
   SendResult,
   NetworkKind,
 } from '@chat-bridge/types';
-import { ScenarioBuilder, type SyntheticScenario } from '@chat-bridge/testing';
+import {
+  ScenarioBuilder,
+  type SyntheticScenario,
+} from '@chat-bridge/testing/scenarios/scenario-builder.js';
 
 export interface FakeSourceOptions {
   account?: string | undefined;
