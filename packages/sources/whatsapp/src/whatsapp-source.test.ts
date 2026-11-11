@@ -234,6 +234,347 @@ describe('US-S3-01: WhatsApp QR Code & Pairing Code Authentication', () => {
     });
   });
 
+  describe('US-C6-01: WhatsApp Sender Phone Number Resolution and Population', () => {
+    it('populates from.phone with E.164 number when incoming group message LID is resolved in identity store', async () => {
+      const source = createSource();
+      const loginPromise = source.login();
+      mockSocket.simulateScanSuccess({
+        id: '84901234567@s.whatsapp.net',
+        phone: '84901234567',
+        name: 'Rep Charlotte',
+        isBusiness: false,
+      });
+      await loginPromise;
+
+      await source.registerIdentityMapping({
+        aliasId: '1122334455@lid',
+        primaryPhone: '84901234567',
+        displayName: 'Alice Buyer',
+      });
+
+      const receivedMessages: Message[] = [];
+      await source.start((msg) => {
+        receivedMessages.push(msg);
+      });
+
+      mockSocket.simulateInboundRawMessage({
+        key: {
+          remoteJid: 'group123@g.us',
+          fromMe: false,
+          id: 'wa-msg-lid-grp-1',
+          participant: '1122334455@lid',
+        },
+        messageTimestamp: Math.floor(Date.now() / 1000),
+        pushName: 'Alice Buyer',
+        message: {
+          conversation: 'Hello from mapped LID in group',
+        },
+      });
+
+      expect(receivedMessages.length).toBe(1);
+      const msg = receivedMessages[0];
+      expect(msg?.from.accountId).toBe('84901234567');
+      expect(msg?.from.phone).toBe('+84901234567');
+      expect(msg?.from.displayName).toBe('Alice Buyer');
+    });
+
+    it('populates from.phone with E.164 number when incoming 1:1 DM message LID is resolved', async () => {
+      const source = createSource();
+      const loginPromise = source.login();
+      mockSocket.simulateScanSuccess({
+        id: '84901234567@s.whatsapp.net',
+        phone: '84901234567',
+        name: 'Rep Charlotte',
+        isBusiness: false,
+      });
+      await loginPromise;
+
+      await source.registerIdentityMapping({
+        aliasId: '1122334455@lid',
+        primaryPhone: '84901234567',
+        displayName: 'Alice Buyer',
+      });
+
+      const receivedMessages: Message[] = [];
+      await source.start((msg) => {
+        receivedMessages.push(msg);
+      });
+
+      mockSocket.simulateInboundRawMessage({
+        key: {
+          remoteJid: '1122334455@lid',
+          fromMe: false,
+          id: 'wa-msg-lid-dm-1',
+        },
+        messageTimestamp: Math.floor(Date.now() / 1000),
+        pushName: 'Alice Buyer',
+        message: {
+          conversation: 'Hello from mapped LID in 1:1 DM',
+        },
+      });
+
+      expect(receivedMessages.length).toBe(1);
+      const msg = receivedMessages[0];
+      expect(msg?.from.accountId).toBe('84901234567');
+      expect(msg?.from.phone).toBe('+84901234567');
+    });
+
+    it('leaves from.phone undefined and never guesses it when LID has no mapping', async () => {
+      const source = createSource();
+      const loginPromise = source.login();
+      mockSocket.simulateScanSuccess({
+        id: '84901234567@s.whatsapp.net',
+        phone: '84901234567',
+        name: 'Rep Charlotte',
+        isBusiness: false,
+      });
+      await loginPromise;
+
+      const receivedMessages: Message[] = [];
+      await source.start((msg) => {
+        receivedMessages.push(msg);
+      });
+
+      mockSocket.simulateInboundRawMessage({
+        key: {
+          remoteJid: 'group123@g.us',
+          fromMe: false,
+          id: 'wa-msg-unmapped-lid',
+          participant: '1122334455@lid',
+        },
+        messageTimestamp: Math.floor(Date.now() / 1000),
+        pushName: 'Unknown LID Contact',
+        message: {
+          conversation: 'Hello from unmapped LID',
+        },
+      });
+
+      expect(receivedMessages.length).toBe(1);
+      const msg = receivedMessages[0];
+      expect(msg?.from.accountId).toBe('1122334455');
+      expect(msg?.from.phone).toBeUndefined();
+    });
+
+    it('populates from.phone in E.164 format when sender has a plain @s.whatsapp.net id in DM', async () => {
+      const source = createSource();
+      const loginPromise = source.login();
+      mockSocket.simulateScanSuccess({
+        id: '84901234567@s.whatsapp.net',
+        phone: '84901234567',
+        name: 'Rep Charlotte',
+        isBusiness: false,
+      });
+      await loginPromise;
+
+      const receivedMessages: Message[] = [];
+      await source.start((msg) => {
+        receivedMessages.push(msg);
+      });
+
+      mockSocket.simulateInboundRawMessage({
+        key: {
+          remoteJid: '84987654321@s.whatsapp.net',
+          fromMe: false,
+          id: 'wa-msg-plain-dm-1',
+        },
+        messageTimestamp: Math.floor(Date.now() / 1000),
+        pushName: 'Bob Customer',
+        message: {
+          conversation: 'Hello via standard phone JID',
+        },
+      });
+
+      expect(receivedMessages.length).toBe(1);
+      const msg = receivedMessages[0];
+      expect(msg?.from.accountId).toBe('84987654321');
+      expect(msg?.from.phone).toBe('+84987654321');
+    });
+
+    it('populates from.phone in E.164 format when sender has a plain @s.whatsapp.net id in group chat', async () => {
+      const source = createSource();
+      const loginPromise = source.login();
+      mockSocket.simulateScanSuccess({
+        id: '84901234567@s.whatsapp.net',
+        phone: '84901234567',
+        name: 'Rep Charlotte',
+        isBusiness: false,
+      });
+      await loginPromise;
+
+      const receivedMessages: Message[] = [];
+      await source.start((msg) => {
+        receivedMessages.push(msg);
+      });
+
+      mockSocket.simulateInboundRawMessage({
+        key: {
+          remoteJid: 'group456@g.us',
+          fromMe: false,
+          id: 'wa-msg-plain-grp-1',
+          participant: '84987654321@s.whatsapp.net',
+        },
+        messageTimestamp: Math.floor(Date.now() / 1000),
+        pushName: 'Bob Customer',
+        message: {
+          conversation: 'Group message from phone JID',
+        },
+      });
+
+      expect(receivedMessages.length).toBe(1);
+      const msg = receivedMessages[0];
+      expect(msg?.from.accountId).toBe('84987654321');
+      expect(msg?.from.phone).toBe('+84987654321');
+    });
+
+    it('normalizes primaryPhone registered with leading plus to clean E.164 format', async () => {
+      const source = createSource();
+      const loginPromise = source.login();
+      mockSocket.simulateScanSuccess({
+        id: '84901234567@s.whatsapp.net',
+        phone: '84901234567',
+        name: 'Rep Charlotte',
+        isBusiness: false,
+      });
+      await loginPromise;
+
+      await source.registerIdentityMapping({
+        aliasId: '1122334455@lid',
+        primaryPhone: '+84901234567',
+        displayName: 'Alice Buyer',
+      });
+
+      const receivedMessages: Message[] = [];
+      await source.start((msg) => {
+        receivedMessages.push(msg);
+      });
+
+      mockSocket.simulateInboundRawMessage({
+        key: {
+          remoteJid: 'group123@g.us',
+          fromMe: false,
+          id: 'wa-msg-lid-leading-plus',
+          participant: '1122334455@lid',
+        },
+        messageTimestamp: Math.floor(Date.now() / 1000),
+        pushName: 'Alice Buyer',
+        message: {
+          conversation: 'Message testing leading plus normalization',
+        },
+      });
+
+      expect(receivedMessages.length).toBe(1);
+      const msg = receivedMessages[0];
+      expect(msg?.from.phone).toBe('+84901234567');
+    });
+
+    it('populates from.phone in E.164 format for outbound messages sent by the user', async () => {
+      const source = createSource();
+      const loginPromise = source.login();
+      mockSocket.simulateScanSuccess({
+        id: '84901234567@s.whatsapp.net',
+        phone: '84901234567',
+        name: 'Rep Charlotte',
+        isBusiness: false,
+      });
+      await loginPromise;
+
+      const receivedMessages: Message[] = [];
+      await source.start((msg) => {
+        receivedMessages.push(msg);
+      });
+
+      mockSocket.simulateInboundRawMessage({
+        key: {
+          remoteJid: '84987654321@s.whatsapp.net',
+          fromMe: true,
+          id: 'wa-msg-outbound-1',
+        },
+        messageTimestamp: Math.floor(Date.now() / 1000),
+        message: {
+          conversation: 'Outbound message from rep',
+        },
+      });
+
+      expect(receivedMessages.length).toBe(1);
+      const msg = receivedMessages[0];
+      expect(msg?.direction).toBe('outbound');
+      expect(msg?.from.phone).toBe('+84901234567');
+    });
+
+    it('strips device suffix and normalizes phone number when JID contains device identifier', async () => {
+      const source = createSource();
+      const loginPromise = source.login();
+      mockSocket.simulateScanSuccess({
+        id: '84901234567@s.whatsapp.net',
+        phone: '84901234567',
+        name: 'Rep Charlotte',
+        isBusiness: false,
+      });
+      await loginPromise;
+
+      const receivedMessages: Message[] = [];
+      await source.start((msg) => {
+        receivedMessages.push(msg);
+      });
+
+      mockSocket.simulateInboundRawMessage({
+        key: {
+          remoteJid: 'group123@g.us',
+          fromMe: false,
+          id: 'wa-msg-device-suffix',
+          participant: '84987654321:1@s.whatsapp.net',
+        },
+        messageTimestamp: Math.floor(Date.now() / 1000),
+        pushName: 'Bob Device 1',
+        message: {
+          conversation: 'Message from companion device',
+        },
+      });
+
+      expect(receivedMessages.length).toBe(1);
+      const msg = receivedMessages[0];
+      expect(msg?.from.accountId).toBe('84987654321');
+      expect(msg?.from.phone).toBe('+84987654321');
+    });
+
+    it('preserves from.phone on historical messages fetched via history()', async () => {
+      const source = createSource();
+      const loginPromise = source.login();
+      mockSocket.simulateScanSuccess({
+        id: '84901234567@s.whatsapp.net',
+        phone: '84901234567',
+        name: 'Rep Charlotte',
+        isBusiness: false,
+      });
+      await loginPromise;
+
+      await source.registerIdentityMapping({
+        aliasId: '1122334455@lid',
+        primaryPhone: '84901234567',
+        displayName: 'Alice Buyer',
+      });
+
+      const pastTimestamp = Math.floor(Date.now() / 1000) - 100;
+      mockSocket.simulateInboundRawMessage({
+        key: {
+          remoteJid: 'group123@g.us',
+          fromMe: false,
+          id: 'wa-msg-hist-1',
+          participant: '1122334455@lid',
+        },
+        messageTimestamp: pastTimestamp,
+        pushName: 'Alice Buyer',
+        message: {
+          conversation: 'Historical message from mapped LID',
+        },
+      });
+
+      const historyMessages = await source.history(new Date(Date.now() - 3600000).toISOString());
+      expect(historyMessages.length).toBe(1);
+      expect(historyMessages[0]?.from.phone).toBe('+84901234567');
+    });
+  });
+
   describe('Encrypted Session Restoration Across Reboots', () => {
     it('restores connected state from encrypted SQLite session without re-authenticating', async () => {
       // First instance logs in
