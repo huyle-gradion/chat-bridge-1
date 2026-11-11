@@ -34,8 +34,8 @@ export class IdentityStore {
   }
 
   public setMapping(aliasId: string, primaryId: string, displayName?: string): void {
-    const cleanAlias = aliasId.replace(/@lid|@s\.whatsapp\.net/g, '');
-    const cleanPrimary = primaryId.replace(/@lid|@s\.whatsapp\.net/g, '');
+    const cleanAlias = aliasId.replace(/:\d+/g, '').replace(/@lid|@s\.whatsapp\.net/g, '');
+    const cleanPrimary = primaryId.replace(/:\d+/g, '').replace(/@lid|@s\.whatsapp\.net/g, '').replace(/^\+/, '');
 
     this.memoryCache.set(aliasId, cleanPrimary);
     this.memoryCache.set(cleanAlias, cleanPrimary);
@@ -56,7 +56,7 @@ export class IdentityStore {
   }
 
   public resolve(aliasId: string): string {
-    const cleanAlias = aliasId.replace(/@lid|@s\.whatsapp\.net/g, '');
+    const cleanAlias = aliasId.replace(/:\d+/g, '').replace(/@lid|@s\.whatsapp\.net/g, '');
     const cached = this.memoryCache.get(aliasId) ?? this.memoryCache.get(cleanAlias);
     if (cached) {
       return cached;
@@ -78,14 +78,38 @@ export class IdentityStore {
     return cleanAlias;
   }
 
-  public getDisplayName(aliasOrPrimaryId: string): string | undefined {
+  public getMapping(aliasId: string): string | undefined {
+    const cleanAlias = aliasId.replace(/:\d+/g, '').replace(/@lid|@s\.whatsapp\.net/g, '');
+    const cached = this.memoryCache.get(aliasId) ?? this.memoryCache.get(cleanAlias);
+    if (cached) {
+      return cached;
+    }
+
     const stmt = this.db.prepare(`
-      SELECT display_name FROM identity_mappings
-      WHERE network = ? AND (alias_id = ? OR primary_id = ?)
+      SELECT primary_id FROM identity_mappings
+      WHERE network = ? AND (alias_id = ? OR alias_id = ?)
       LIMIT 1
     `);
 
-    const row = stmt.get(this.network, aliasOrPrimaryId, aliasOrPrimaryId) as { display_name: string | null } | undefined;
+    const row = stmt.get(this.network, aliasId, cleanAlias) as { primary_id: string } | undefined;
+    if (row) {
+      this.memoryCache.set(aliasId, row.primary_id);
+      this.memoryCache.set(cleanAlias, row.primary_id);
+      return row.primary_id;
+    }
+
+    return undefined;
+  }
+
+  public getDisplayName(aliasOrPrimaryId: string): string | undefined {
+    const cleanId = aliasOrPrimaryId.replace(/:\d+/g, '').replace(/@lid|@s\.whatsapp\.net/g, '');
+    const stmt = this.db.prepare(`
+      SELECT display_name FROM identity_mappings
+      WHERE network = ? AND (alias_id = ? OR primary_id = ? OR alias_id = ? OR primary_id = ?)
+      LIMIT 1
+    `);
+
+    const row = stmt.get(this.network, aliasOrPrimaryId, aliasOrPrimaryId, cleanId, cleanId) as { display_name: string | null } | undefined;
     return row?.display_name ?? undefined;
   }
 }
