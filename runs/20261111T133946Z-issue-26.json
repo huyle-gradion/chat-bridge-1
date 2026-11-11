@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "issue": 26,
+  "title": "WhatsApp messages carry the sender's phone number when the LID is resolved (US-C6-01)",
+  "labels": [
+    "agent:plan-review"
+  ],
+  "runner": "antigravity-cli in docker (agy 1.5.5)",
+  "model": "gemini-3.8-flash-high",
+  "startedAt": "2026-11-11T13:28:23.585Z",
+  "finishedAt": "2026-11-11T13:39:46.762Z",
+  "outcome": "passed",
+  "phases": [
+    {
+      "phase": "green",
+      "passed": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "agentExitCode": 0,
+          "usage": {
+            "input": 3607905,
+            "cachedInput": 3372235,
+            "output": 50956,
+            "total": 3658861,
+            "requests": 62
+          },
+          "toolCalls": {
+            "read_file": 17,
+            "run_command": 20,
+            "manage_task": 21,
+            "edit_file": 3
+          },
+          "gates": [
+            {
+              "name": "build",
+              "status": "pass",
+              "durationMs": 9476
+            },
+            {
+              "name": "guard",
+              "status": "pass",
+              "durationMs": 5964
+            },
+            {
+              "name": "test",
+              "status": "pass",
+              "durationMs": 15585
+            },
+            {
+              "name": "e2e",
+              "status": "pass",
+              "durationMs": 6242
+            }
+          ],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": []
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input": 3607905,
+    "cachedInput": 3372235,
+    "output": 50956,
+    "total": 3658861,
+    "requests": 62
+  },
+  "costUsd": 0.6208,
+  "caughtBy": [],
+  "firstPass": true,
+  "stage": "build"
+}
