@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "issue": 26,
+  "title": "WhatsApp messages carry the sender's phone number when the LID is resolved (US-C6-01)",
+  "labels": [
+    "agent:ready"
+  ],
+  "runner": "antigravity-cli in docker (agy 1.5.5)",
+  "model": "gemini-3.8-flash-high",
+  "startedAt": "2026-11-11T11:45:35.355Z",
+  "finishedAt": "2026-11-11T11:54:33.676Z",
+  "outcome": "plan-ready",
+  "phases": [
+    {
+      "phase": "red",
+      "passed": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "agentExitCode": 0,
+          "usage": {
+            "input": 2637414,
+            "cachedInput": 2412406,
+            "output": 34340,
+            "total": 2671754,
+            "requests": 56
+          },
+          "toolCalls": {
+            "read_file": 15,
+            "run_command": 30,
+            "manage_task": 9,
+            "edit_file": 1
+          },
+          "gates": [
+            {
+              "name": "test",
+              "status": "fail",
+              "durationMs": 13872
+            }
+          ],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": []
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input": 2637414,
+    "cachedInput": 2412406,
+    "output": 34340,
+    "total": 2671754,
+    "requests": 56
+  },
+  "costUsd": 0.4785,
+  "caughtBy": [],
+  "firstPass": true,
+  "stage": "plan"
+}
