@@ -18,7 +18,8 @@ Chat Bridge integrates personal Zalo accounts via the unofficial `zca-js` librar
 ### Critical Protocol & Privacy Edge Cases
 1. **Single Concurrent Web Session Limit & Account Ban Hazards:**
    - Zalo strictly limits each user account to **one active web/browser session**.
-   - If the sales representative opens `chat.zalo.me` in Google Chrome while Chat Bridge is running, Zalo's WebSocket servers immediately terminate the `zca-js` session with error code `1001` (Session Conflict / Disconnected by newer session).
+   - If the sales representative opens `chat.zalo.me` in Google Chrome while Chat Bridge is running, Zalo's WebSocket servers immediately terminate the `zca-js` session with close code `3000` (DuplicateConnection) or `3003` (KickConnection; observed as `KICKOUT_BY_WORKER` in a live test on 2026-11-09). The Zalo PC app is a separate session and does not cause this.
+   - The takeover also cancels the saved credentials: restarting the listener drops with `1006`, and `login(credentials)` fails. Only a new QR scan reconnects.
    - **The Hazard:** If Chat Bridge treats this as a standard network drop and attempts aggressive automatic reconnection, it enters an infinite ping-pong takeover loop with the rep's browser. Zalo's anti-abuse heuristics will flag the account as an automated bot, resulting in a temporary or permanent account ban.
 2. **Identity Ambiguity: `uidFrom` vs `globalId` ([Section 15](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L360)):**
    - Spec Open Question: *"Is a Zalo user id the same when seen from two different accounts? Also test zca-js globalId."*
@@ -50,7 +51,7 @@ We choose **Option 2: Conflict-Aware Session Watchdog, Safe Lockout State Machin
           - Cache Profile in sessions.db       +--------------+--------------+
           - Forward to Outbox                  |                             |
                                                v                             v
-                                  [ Close Code === 1001 ]       [ Network Timeout / Socket Error ]
+                                  [ Close Code 3000 / 3003 ]    [ Network Timeout / Socket Error ]
                                   (Session Conflict / Takeover) (Transient Network Flap)
                                                |                             |
                                                v                             v
@@ -153,7 +154,7 @@ Located in `packages/core/src/sources/zalo/ZaloNormalizer.ts`:
 ## 4. Consequences and Mitigations
 
 * **Trade-off 1:** When the sales rep opens Zalo Web to send personal messages, message forwarding in Chat Bridge pauses until they click "Reconnect".
-  * *Mitigation:* This is an unavoidable constraint of Zalo's single-web-session architecture. Educating the rep via the C-7 banner and desktop notification sets clear expectations. Messages sent while disconnected are fetched via history backfill upon reconnection ([ADR 0011](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0011-history-import-rate-pacing-priority-scheduling.md)).
+  * *Mitigation:* This is an unavoidable constraint of Zalo's single-web-session architecture. Educating the rep via the C-7 banner and desktop notification sets clear expectations. Messages received during the takeover are **not** recovered: in the 2026-11-09 live test, 0 were replayed on reconnect and `requestOldMessages` returned empty batches, and zca-js has no per-chat DM history call. The banner states the time forwarding stopped so the rep knows what was missed. (`getGroupChatHistory` might recover group messages; untested.)
 * **Trade-off 2:** `getUserInfo` rate limiting by Zalo servers during high-traffic group message bursts.
   * *Mitigation:* A local in-memory LRU cache backed by SQLite `contact_profiles` table ensures `getUserInfo` is executed strictly once per unique sender ID, eliminating redundant network calls.
 

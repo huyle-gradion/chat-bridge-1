@@ -1,7 +1,7 @@
 # ADR 0001: Desktop Shell Architecture & Runtime Selection
 
 * **Status:** Accepted
-* **Date:** 2026-11-04
+* **Date:** 2026-11-04 (revised 2026-11-09)
 * **Deciders:** Team / Project Lead
 * **Consulted:** `docs/spec.md` (Sections 1, 2, 4, 7 [I-1, I-2, I-5, C-3, C-7], 11, 13)
 
@@ -38,20 +38,26 @@ We will proceed with **Option 1: Electron**:
 
 | Evaluation Metric | Option 1: Electron (Selected) | Option 2: Tauri + Sidecar | Option 3: Daemon + Browser |
 | :--- | :--- | :--- | :--- |
-| **Connector Compatibility** | **Native.** `baileys` and `zca-js` run directly in Node main process. | **Complex.** Requires bundling, spawning, and supervising a secondary Node runtime. | **Native.** Pure Node process. |
-| **OS Keystore (C-3)** | **Built-in `safeStorage`.** Direct macOS Keychain and Windows DPAPI bindings out of the box. | Requires cross-language FFI between Rust keyring and Node. | Requires native C++ addons (`keytar`, `@napi-rs/keyring`) which frequently break cross-compilation. |
+| **Connector Compatibility** | **Native.** `baileys` and `zca-js` run directly in Node main process. | **Workable via Node sidecar.** Connectors run unchanged, but this adds per-platform binaries, native addon packaging (`better-sqlite3`), sidecar signing/notarization, and lifecycle supervision. | **Native.** Pure Node process. |
+| **OS Keystore (C-3)** | **Built-in `safeStorage`.** Direct macOS Keychain and Windows DPAPI bindings out of the box. | Rust `keyring` reads the key and passes it to the sidecar over stdin. Simple, but the key crosses a process boundary. | Requires native C++ addons (`keytar`, `@napi-rs/keyring`) which frequently break cross-compilation. |
 | **Desktop Usability (I-5, Section 13)** | **Native Window & Tray.** Standalone app window, dock/tray icons, desktop notifications. | **Native Window & Tray.** | **Poor.** Opens as a browser tab alongside personal browsing; easily closed by mistake. |
-| **Idle Memory Budget (< 250 MB)** | **~140–180 MB.** Fits safely within Section 11 budget. | **~60–100 MB.** | **~50–70 MB.** |
-| **Implementation Risk (Deadline: Nov 27)** | **Low.** 100% TypeScript/Node codebase, standard build pipeline. | **High.** Dual-runtime (Rust + TS) maintenance, IPC overhead, dual-OS sidecar bundling. | **Medium.** Cannot easily satisfy non-terminal standalone install criteria. |
+| **Idle Memory Budget (< 250 MB, engine process)** | **Engine process ~140–180 MB; whole app ~230–360 MB with window open (estimate).** | **Engine (sidecar) ~80–150 MB; whole app ~130–250 MB macOS, ~170–320 MB Windows (estimate).** | **Engine ~80–150 MB (estimate, real sessions).** |
+| **Implementation Risk (Deadline: Nov 27)** | **Low.** 100% TypeScript/Node codebase, standard build pipeline. | **High.** Small Rust shell the TS team must own; sidecar lifecycle (port, auth, readiness, crash restart, clean exit); per-platform Node + native-addon packaging and sidecar signing on macOS and Windows. | **Medium.** Cannot easily satisfy non-terminal standalone install criteria. |
 
 ---
 
 ## 4. Consequences and Mitigations
 
-* **Memory Footprint & Long-Running Scalability:** Electron consumes more RAM than Tauri or a pure daemon due to Chromium.  
-  * *Mitigation:* The engine core (`src/engine/`) is strictly decoupled from Electron APIs so it can run headless at ~50 MB RSS. In the desktop app, when the window is closed to the system tray, the app minimizes/unloads the Chromium renderer process, dropping the memory footprint significantly during long-running background bridging. Background processes and outbox queues maintain bounded in-memory buffers.
+* **Memory Footprint & Long-Running Scalability:** Electron consumes more RAM than Tauri or a pure daemon due to Chromium. All memory figures in Section 3 are unmeasured estimates. The spec budget (`docs/spec.md` Section 11) applies to the engine process, which in Electron is the main process; renderer, GPU and utility processes are reported separately.
+  * *Mitigation:* The engine core (`src/engine/`) is strictly decoupled from Electron APIs so it can run headless; CI enforces the budget on the headless engine in pure Node. Closing the window to the system tray calls `win.destroy()` (not `hide()`), freeing the renderer; the window is recreated on reopen. The feed list is virtualized so an open window does not grow with traffic. Background processes and outbox queues maintain bounded in-memory buffers.
+  * *Validation:* Measure RSS with `app.getAppMetrics()` (per process and total) as soon as the shell exists, with real WhatsApp and Zalo sessions. If the main process exceeds 250 MB idle, revisit this decision.
 * **Installer Size:** Binaries will be larger (~80–100 MB).  
   * *Mitigation:* Acceptable per spec scope (broadband installer download for desktop users).
 * **CLI Code Sharing:** The CLI must not depend on Electron APIs.  
   * *Mitigation:* Keystore access will use an adapter interface: Electron environment uses `safeStorage`, while standalone CLI and CI use a portable keyfile/fallback mechanism (`0600` permissions on Linux/CI as specified in C-3).
 
+---
+
+## 5. Revision History
+
+* **2026-11-09:** Corrected the Tauri connector and keystore rows (sidecar is workable; no FFI needed), scoped and marked memory figures as estimates, replaced "unload renderer" with `win.destroy()` on close to tray, and added a measurement check. Reworded the Tauri implementation risk to name the actual costs (Rust ownership, sidecar lifecycle, packaging and signing) instead of IPC overhead. Memory row now compares engine process and whole app on the same basis for each option. Decision unchanged. The Electron shell is not yet implemented in `packages/desktop/`.
