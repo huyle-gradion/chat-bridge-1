@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "issue": 26,
+  "title": "Add <small helper> to packages/engine",
+  "labels": [
+    "agent:ready"
+  ],
+  "runner": "antigravity-cli in docker (agy 1.5.5)",
+  "model": "gemini-4-argon-high",
+  "startedAt": "2026-11-11T11:16:34.436Z",
+  "finishedAt": "2026-11-11T11:16:56.757Z",
+  "outcome": "needs-human",
+  "phases": [
+    {
+      "phase": "red",
+      "passed": false,
+      "attempts": [
+        {
+          "attempt": 1,
+          "agentExitCode": 1,
+          "agentError": "invalid model selection (--model \"gemini-4-argon-high\" --effort \"\"): model gemini-4-argon-high is not recognized as a known model or custom model in settings\nAvailable models:\n  Gemini 3.8 Flash (High)\n  Gemini 3.8 Flash (Medium)\n  Gemini 3.8 Flash (Low)\n  Claude Sonnet 4.6 (Thinking)\n  Claude Opus 4.6 (Thinking)\n  GPT-OSS 120B (Medium)",
+          "usage": {
+            "input": 0,
+            "cachedInput": 0,
+            "output": 0,
+            "total": 0,
+            "requests": 0
+          },
+          "toolCalls": {},
+          "gates": [],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": [],
+          "failure": "no-tests"
+        },
+        {
+          "attempt": 2,
+          "agentExitCode": 1,
+          "agentError": "invalid model selection (--model \"gemini-4-argon-high\" --effort \"\"): model gemini-4-argon-high is not recognized as a known model or custom model in settings\nAvailable models:\n  Gemini 3.8 Flash (High)\n  Gemini 3.8 Flash (Medium)\n  Gemini 3.8 Flash (Low)\n  Claude Sonnet 4.6 (Thinking)\n  Claude Opus 4.6 (Thinking)\n  GPT-OSS 120B (Medium)",
+          "usage": {
+            "input": 0,
+            "cachedInput": 0,
+            "output": 0,
+            "total": 0,
+            "requests": 0
+          },
+          "toolCalls": {},
+          "gates": [],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": [],
+          "failure": "no-tests"
+        },
+        {
+          "attempt": 3,
+          "agentExitCode": 1,
+          "agentError": "invalid model selection (--model \"gemini-4-argon-high\" --effort \"\"): model gemini-4-argon-high is not recognized as a known model or custom model in settings\nAvailable models:\n  Gemini 3.8 Flash (High)\n  Gemini 3.8 Flash (Medium)\n  Gemini 3.8 Flash (Low)\n  Claude Sonnet 4.6 (Thinking)\n  Claude Opus 4.6 (Thinking)\n  GPT-OSS 120B (Medium)",
+          "usage": {
+            "input": 0,
+            "cachedInput": 0,
+            "output": 0,
+            "total": 0,
+            "requests": 0
+          },
+          "toolCalls": {},
+          "gates": [],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": [],
+          "failure": "no-tests"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input": 0,
+    "cachedInput": 0,
+    "output": 0,
+    "total": 0,
+    "requests": 0
+  },
+  "costUsd": 0,
+  "caughtBy": [
+    "agent-error",
+    "agent-error",
+    "agent-error"
+  ],
+  "firstPass": false,
+  "stage": "plan"
+}
