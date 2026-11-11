@@ -194,6 +194,10 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
   - **Scenario 3: Standard POSIX flags and exit codes**
     - **Then** all commands adhere to POSIX conventions: `--json`, `--help`, `--version`,
     - **And** exit code `0` on success, non-zero on error.
+  - **Scenario 4: Keystore access without Electron**
+    - **Given** the CLI runs in plain Node, where Electron `safeStorage` is unavailable,
+    - **When** it needs the encryption key,
+    - **Then** it reads it from the OS keyring through a native keyring library, or from a key file with owner-only permissions.
 
 ---
 
@@ -252,6 +256,10 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
     - **Given** an unscanned QR code expires after 60 seconds,
     - **When** timeout occurs,
     - **Then** the QR code dims and displays a _"Click to refresh QR code"_ overlay rather than failing silently.
+  - **Scenario 4: Link retry backoff**
+    - **Given** a link attempt fails (e.g. close code `428`),
+    - **When** the engine retries,
+    - **Then** it waits with exponential backoff and stops after 5 failures with a plain-language error, so repeated attempts do not get the network blocked.
 
 ---
 
@@ -269,14 +277,16 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
   - **Scenario 1: Successful Zalo QR scan**
     - **Given** Charlotte selects "Connect Zalo",
     - **When** the QR code is scanned using the mobile Zalo app and confirmed,
-    - **Then** the session token is encrypted and saved to the OS keystore,
+    - **Then** the session credentials (cookies, device id, user agent) are encrypted and saved to the OS keystore,
     - **And** the UI status updates to _"Zalo connected"_ with her display name.
   - **Scenario 2: Session takeover detection (Zalo Web conflict)**
     - **Given** Chat Bridge is connected to Zalo,
-    - **When** Charlotte logs into Zalo Web on another browser or device (causing Zalo to revoke the desktop session),
-    - **Then** the engine detects session invalidation within 15 seconds,
-    - **And** displays an urgent amber warning banner: _"Zalo was opened on another web browser. Click here to reconnect Chat Bridge."_,
-    - **And** queues any newly arrived messages safely until reconnected.
+    - **When** Charlotte opens Zalo Web (`chat.zalo.me`) in a browser (the Zalo PC app does not cause this),
+    - **Then** the engine detects the takeover within 15 seconds (close code `3000` or `3003`),
+    - **And** never reconnects automatically, because that would kick her browser tab in turn,
+    - **And** displays an urgent amber warning banner: _"Zalo Web was opened. Messages received since {time} were not forwarded. Scan to reconnect."_,
+    - **And** clicking it shows a new QR code, because the takeover cancels the saved session.
+  - **Note:** Messages received during a takeover cannot be recovered (live test, 9 Nov 2026: saved-session login failed, 0 messages replayed, `requestOldMessages` empty). Whether `getUserInfo` returns a phone number for strangers still needs a live test before 13 Nov.
 
 ---
 
@@ -302,13 +312,13 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
     - **And** incoming messages for unticked chats are marked as _"Not chosen (private)"_ in the local ephemeral feed and discarded without hitting any outbox queue.
   - **Scenario 2: Roster discovery and search**
     - **Given** Charlotte opens the _"Choose chats"_ screen,
-    - **Then** the screen displays all discovered chats with:
-      - Contact/Group display name and avatar (if available),
+    - **Then** the screen displays chats seen since linking and from the initial sync, plus Zalo friends and groups, with:
+      - Contact/Group display name and avatar (when the network provides them),
       - Network badge (WhatsApp or Zalo),
       - Thread kind badge (Direct Message or Group),
       - Timestamp of the last received message,
       - Checkbox toggle.
-    - **And** a search bar filters the list instantly by contact name or phone number.
+    - **And** a search bar filters the list instantly by contact name or phone number (when the network provides one).
   - **Scenario 3: Newly arriving chats start unticked**
     - **Given** a new person initiates a chat with Charlotte for the first time,
     - **When** the first message arrives,
@@ -501,7 +511,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
   - **Scenario 3: Media attachment placeholder formatting**
     - **Given** an incoming message contains an image or invoice attachment (`invoice.jpg`, 1.2 MB),
     - **When** the message is delivered to Margince,
-    - **Then** the text body contains a clean placeholder line: `[image: invoice.jpg, 1.2 MB]` and the message text,
+    - **Then** the text body contains a clean placeholder line with the file name and size when available (e.g. `[image, 1.2 MB]` or `[file: invoice.pdf, 1.2 MB]`) and the message text,
     - **And** zero heavy media binary bytes are uploaded.
 
 ---
@@ -561,7 +571,8 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
     - **When** Marcus clicks "Sign in with Google",
     - **Then** the system browser opens Google's OAuth consent screen,
     - **And** upon approval, redirects back to the local app loopback port,
-    - **And** displays a list of available Google Sheets from Google Drive.
+    - **And** lets Marcus choose a sheet with Google's file picker or by pasting its link (listing all Drive sheets needs a restricted scope that requires Google's security review),
+    - **And** the setup guide shows Google's "unverified app" screen and how to continue past it.
   - **Scenario 2: Append message row format**
     - **Given** an active Google Sheet is selected,
     - **When** a message is delivered,
@@ -640,7 +651,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
   - **Scenario 1: Starting history backfill with bounded presets**
     - **Given** Charlotte has picked 5 work chats,
     - **When** navigating to the "Import" screen and selecting a start date preset (_"Last 7 days (Recommended)"_, _"Last 30 days"_, or _"Since yesterday"_),
-    - **Then** the engine begins fetching historical messages in batches of 50,
+    - **Then** the engine begins fetching historical messages in batches of 50, best effort: the phone must be online, and each chat is imported until the date is reached or 500 messages in total,
     - **And** displays an active progress bar: _"Importing messages: 145 / 500 completed..."_,
     - **And** strictly caps backfill at 500 messages per run to stay within memory (<400 MB) and destination rate limits without triggering HTTP 429 errors.
   - **Scenario 2: Real-time traffic priority over backfill**
@@ -694,7 +705,7 @@ _Goal: Deliver high-value extensions including inbound CRM replies, local deskto
   > So that message synchronization never silently fails without my awareness.
 - **Acceptance Criteria:**
   - **Scenario 1: WhatsApp 14-day inactivity alert**
-    - **Given** WhatsApp multi-device session has not seen mobile activity for 12 days,
+    - **Given** an estimated 12 days since the phone was last used (WhatsApp exposes no exact value; estimated from the last message sent from the phone or the last app-state sync),
     - **When** the app status check runs,
     - **Then** a prominent banner appears: _"Open WhatsApp on your phone in the next 2 days to keep this computer connected."_ with a _"How to fix"_ button explaining to simply launch WhatsApp on her mobile phone.
   - **Scenario 2: Desktop native notification**
@@ -881,4 +892,4 @@ A user story in this catalog is considered **Done** and eligible for release sig
 - [ ] **Plain-Language & Zero Jargon:** UI screens, labels, and dialogs pass the CI AST/DOM text linter with zero forbidden developer terms (_"sink"_, _"outbox"_, _"JID"_, _"regex"_) per [`AGENTS.md`](../.agents/rules/AGENTS.md).
 - [ ] **Actionable Error Feedback:** All user-facing error messages clearly explain what happened and state the exact next click or action to resolve it.
 - [ ] **Performance & Resource Budgets:** Passes cold startup (<5.0 s), idle memory (<250 MB RSS), idle CPU (<2%), and 500-message backfill (<5.0 s/msg, <400 MB peak) budgets defined in [`docs/spec.md`](spec.md) §11.
-- [ ] **Privacy & Security Integrity:** Zero plaintext credentials, zero customer PII in fixtures/logs, encrypted storage at rest (AES-GCM/SQLCipher), strictly localhost binding (`127.0.0.1`), and unticked conversations are dropped before entering outbound queues.
+- [ ] **Privacy & Security Integrity:** Zero plaintext credentials, zero customer PII in fixtures/logs, encrypted storage at rest (AES-256-GCM), strictly localhost binding (`127.0.0.1`), and unticked conversations are dropped before entering outbound queues.
