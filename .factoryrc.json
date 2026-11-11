@@ -79,7 +79,16 @@
   },
   "agent": {
     "runner": "antigravity-cli",
-    "model": "gemini-4-argon-high",
+    "model": "gemini-3.8-flash-high",
+    "routes": [
+      {
+        "labels": [
+          "chore",
+          "docs"
+        ],
+        "model": "gemini-3.8-flash-high"
+      }
+    ],
     "context": [
       ".agents/rules/AGENTS.md",
       "docs/spec.md",
@@ -161,6 +170,11 @@
           "inputPerMTok": 2.0,
           "cachedInputPerMTok": 0.1,
           "outputPerMTok": 10.0
+        },
+        "gemini-3.8-flash-high": {
+          "inputPerMTok": 0.75,
+          "cachedInputPerMTok": 0.075,
+          "outputPerMTok": 3.75
         },
         "gemini-3.8-flash-medium": {
           "inputPerMTok": 0.75,
