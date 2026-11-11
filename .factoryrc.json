@@ -80,6 +80,15 @@
   "agent": {
     "runner": "antigravity-cli",
     "model": "gemini-3.8-flash-high",
+    "routes": [
+      {
+        "labels": [
+          "chore",
+          "docs"
+        ],
+        "model": "gemini-3.8-flash-high"
+      }
+    ],
     "context": [
       ".agents/rules/AGENTS.md",
       "docs/spec.md",
