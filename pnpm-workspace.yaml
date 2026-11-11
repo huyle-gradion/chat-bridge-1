@@ -5,6 +5,6 @@ packages:
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
-  - '@agentic-factory/guards@1.0.0'
+  - '@agentic-factory/guards@1.0.0 || 1.1.0'
   - '@agentic-factory/harness@1.0.0'
-  - '@agentic-factory/loop@0.1.0'
+  - '@agentic-factory/loop@0.1.0 || 0.2.0'

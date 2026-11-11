@@ -126,8 +126,15 @@
       "vitest.config.ts",
       "tsconfig.base.json",
       "tsconfig.json",
-      "pnpm-workspace.yaml"
+      "pnpm-workspace.yaml",
+      "docker/**"
     ],
+    "sandbox": {
+      "image": "chat-bridge-agent:1",
+      "agent": true,
+      "memory": "6g",
+      "cpus": 4
+    },
     "maxAttempts": 3,
     "sessionTimeoutMs": 1800000,
     "plan": {
