@@ -9,20 +9,20 @@
 
 ## 1. Context and Problem Statement
 
-Chat Bridge operates on a non-technical sales representative's personal computer ([Section 2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L49-L57)). The application manages two distinct classes of configuration state:
+Chat Bridge operates on a non-technical sales representative's personal computer ([Section 2](../spec.md#L49-L57)). The application manages two distinct classes of configuration state:
 1. **Application Settings & Preferences (Non-Sensitive):**
-   - Active UI language (`en` vs `vi`) and theme preferences ([Section 7 [Feature L-1]](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L212)).
-   - Set of picked chat IDs authorized to leave the computer ([Features C-8, I-4](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L173)).
-   - Message filtering rules (blocked contacts, group message toggle, custom regex patterns, OTP filters) ([Feature C-2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L170)).
-   - Active sink targets and non-sensitive options (e.g. local archive directory, analytical database path, Google Sheets spreadsheet ID, Margince endpoint URL) ([Feature K-0](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L191)).
+   - Active UI language (`en` vs `vi`) and theme preferences ([Section 7 [Feature L-1]](../spec.md#L212)).
+   - Set of picked chat IDs authorized to leave the computer ([Features C-8, I-4](../spec.md#L173)).
+   - Message filtering rules (blocked contacts, group message toggle, custom regex patterns, OTP filters) ([Feature C-2](../spec.md#L170)).
+   - Active sink targets and non-sensitive options (e.g. local archive directory, analytical database path, Google Sheets spreadsheet ID, Margince endpoint URL) ([Feature K-0](../spec.md#L191)).
 2. **Sensitive Credentials & Secrets:**
-   - Margince HMAC connection strings and shared secrets ([Section 8](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L238-L242)).
-   - Google Sheets OAuth 2.0 refresh tokens ([ADR 0003](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0003-google-sheets-oauth-rest.md)).
-   - Custom Webhook HMAC signing keys and bearer authentication tokens ([ADR 0016](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0016-webhook-sink-ssrf-defense.md)).
+   - Margince HMAC connection strings and shared secrets ([Section 8](../spec.md#L238-L242)).
+   - Google Sheets OAuth 2.0 refresh tokens ([ADR 0003](0003-google-sheets-oauth-rest.md)).
+   - Custom Webhook HMAC signing keys and bearer authentication tokens ([ADR 0016](0016-webhook-sink-ssrf-defense.md)).
 
 ### Architectural Challenges & Constraints
-- **Zero Plaintext Secrets on Disk ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L295)):** Sensitive authentication tokens must never reside unencrypted in plain JSON files.
-- **Support & Diagnostics Safety ([Section 14](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L345)):** When a user or developer exports app settings for debugging, credentials must never be co-mingled with settings or inadvertently exported.
+- **Zero Plaintext Secrets on Disk ([Section 11](../spec.md#L295)):** Sensitive authentication tokens must never reside unencrypted in plain JSON files.
+- **Support & Diagnostics Safety ([Section 14](../spec.md#L345)):** When a user or developer exports app settings for debugging, credentials must never be co-mingled with settings or inadvertently exported.
 - **Crash & Power-Cut Durability:** If the computer abruptly loses power or crashes during settings modification in the Wizard or Settings UI, a partial write must never leave a corrupted file that prevents the application from booting.
 - **Schema Evolution & Upgrades:** As new fields or migrations are introduced across releases (e.g. v0.5 to v1.0), settings must automatically migrate with safe fallback defaults without resetting user preferences or picked chats.
 - **Runtime Concurrency:** Both the Electron Desktop app and standalone CLI commands (`chat-bridge filters set ...`, `chat-bridge chats pick ...`) must safely access and modify the configuration without locking database transactions.
@@ -70,7 +70,7 @@ The system enforces strict physical separation of configuration files inside the
    - Zero secrets or credentials are ever permitted in this file (enforced by Zod schema and lint guards).
 2. **`secrets.vault` (OS Keystore-Protected Envelope Vault):**
    - Dedicated key-value credential store backed by `better-sqlite3` or encrypted binary payload.
-   - Encrypted using the application's master key derived from the OS Keystore (macOS Keychain via Electron `safeStorage`, Windows DPAPI, or `0600` Linux keyfile as specified in [ADR 0012](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0012-desktop-packaging-native-toolchain-keystore.md)).
+   - Encrypted using the application's master key derived from the OS Keystore (macOS Keychain via Electron `safeStorage`, Windows DPAPI, or `0600` Linux keyfile as specified in [ADR 0012](0012-desktop-packaging-native-toolchain-keystore.md)).
 
 #### 2. Atomic Write-Rename Resilience
 To prevent file corruption during sudden power termination, battery depletion, or process crashes:
@@ -111,7 +111,7 @@ export interface AppSettings {
 The `ConfigurationManager` exposes an internal event emitter (`TypedEventEmitter<ConfigEvents>`):
 - `settings.on('change:chats', (pickedIds) => ...)`: Notifies the chat normalizer and chat picker cache in real time.
 - `settings.on('change:filters', (newFilters) => ...)`: Notifies the message pipeline without requiring an engine reboot.
-- `settings.on('change:sinks', (sinkConfigs) => ...)`: Dynamically spins up or pauses outbox sink queue workers ([ADR 0005](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0005-outbox-multi-queue-worker-pacing.md)).
+- `settings.on('change:sinks', (sinkConfigs) => ...)`: Dynamically spins up or pauses outbox sink queue workers ([ADR 0005](0005-outbox-multi-queue-worker-pacing.md)).
 
 ---
 

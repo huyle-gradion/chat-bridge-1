@@ -9,9 +9,9 @@
 
 ## 1. Context and Problem Statement
 
-Chat Bridge targets non-technical sales representatives installing an installable desktop application on macOS and Windows ([Section 2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L47), [Feature I-5](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L204)):
+Chat Bridge targets non-technical sales representatives installing an installable desktop application on macOS and Windows ([Section 2](../spec.md#L47), [Feature I-5](../spec.md#L204)):
 - *"A download for macOS and Windows. Double-click installs it; it starts the engine and opens the wizard. No terminal. Unsigned beta, with a one-page install guide (with screenshots) for the 'unknown developer' warning."*
-- Fast startup budget (< 5s), idle RAM budget (< 250 MB), and strict privacy rules: zero telemetry, zero analytics to third parties, local-first ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L309)).
+- Fast startup budget (< 5s), idle RAM budget (< 250 MB), and strict privacy rules: zero telemetry, zero analytics to third parties, local-first ([Section 11](../spec.md#L309)).
 
 ### Architectural Challenges of Unsigned Distribution
 1. **Operating System Quarantine & Code Signing Enforcement:**
@@ -102,7 +102,7 @@ Located in `packages/desktop/src/updater/`:
   1. Installer binary (`Chat-Bridge-Setup-X.Y.Z.exe`) is downloaded to `%TEMP%\chat-bridge-update\`.
   2. SHA-256 hash is verified against the manifest.
   3. UI displays a non-blocking notification: *"Update ready to install. Restart now or on next launch"*.
-  4. When the sales rep clicks *"Restart & update"*, the application initiates two-phase engine shutdown ([ADR 0021](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0021-desktop-process-lifecycle-sleep-wake-tray.md)), flushes databases, and spawns the installer:
+  4. When the sales rep clicks *"Restart & update"*, the application initiates two-phase engine shutdown ([ADR 0021](0021-desktop-process-lifecycle-sleep-wake-tray.md)), flushes databases, and spawns the installer:
      ```typescript
      spawn(installerPath, ['/S'], { detached: true, stdio: 'ignore' }).unref();
      app.quit();
@@ -136,7 +136,7 @@ Located in `packages/desktop/src/updater/`:
 ## 4. Consequences and Mitigations
 
 * **Trade-off 1:** On macOS, the user must perform the drag-and-drop replacement in Finder rather than a 100% silent background binary swap.
-  * *Mitigation:* This is a physical constraint of macOS Gatekeeper for all unsigned applications. The UI provides a clear one-page screenshot guide ([Feature I-5](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L204)) making the replacement effortless. Once commercial developer certificates are acquired in post-beta, seamless background updates can be enabled without breaking changes.
+  * *Mitigation:* This is a physical constraint of macOS Gatekeeper for all unsigned applications. The UI provides a clear one-page screenshot guide ([Feature I-5](../spec.md#L204)) making the replacement effortless. Once commercial developer certificates are acquired in post-beta, seamless background updates can be enabled without breaking changes.
 * **Trade-off 2:** Ed25519 key management overhead during release automation.
   * *Mitigation:* The signing step is automated in the GitHub Actions release workflow via repository secrets. The client only stores the public key.
 

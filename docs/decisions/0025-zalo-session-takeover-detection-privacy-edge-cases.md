@@ -9,11 +9,11 @@
 
 ## 1. Context and Problem Statement
 
-Chat Bridge integrates personal Zalo accounts via the unofficial `zca-js` library ([Section 1](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L30), [Feature S-2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L184)):
+Chat Bridge integrates personal Zalo accounts via the unofficial `zca-js` library ([Section 1](../spec.md#L30), [Feature S-2](../spec.md#L184)):
 - Connects via QR code scan in the UI.
 - Normalizes incoming messages to canonical `Message` schema within 5 seconds.
 - Caches sender profiles fetched via `getUserInfo`.
-- Emits desktop warnings when Zalo Web takes over the session ([Feature C-7](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L176)).
+- Emits desktop warnings when Zalo Web takes over the session ([Feature C-7](../spec.md#L176)).
 
 ### Critical Protocol & Privacy Edge Cases
 1. **Single Concurrent Web Session Limit & Account Ban Hazards:**
@@ -21,10 +21,10 @@ Chat Bridge integrates personal Zalo accounts via the unofficial `zca-js` librar
    - If the sales representative opens `chat.zalo.me` in Google Chrome while Chat Bridge is running, Zalo's WebSocket servers immediately terminate the `zca-js` session with close code `3000` (DuplicateConnection) or `3003` (KickConnection; observed as `KICKOUT_BY_WORKER` in a live test on 2026-11-09). The Zalo PC app is a separate session and does not cause this.
    - The takeover also cancels the saved credentials: restarting the listener drops with `1006`, and `login(credentials)` fails. Only a new QR scan reconnects.
    - **The Hazard:** If Chat Bridge treats this as a standard network drop and attempts aggressive automatic reconnection, it enters an infinite ping-pong takeover loop with the rep's browser. Zalo's anti-abuse heuristics will flag the account as an automated bot, resulting in a temporary or permanent account ban.
-2. **Identity Ambiguity: `uidFrom` vs `globalId` ([Section 15](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L360)):**
+2. **Identity Ambiguity: `uidFrom` vs `globalId` ([Section 15](../spec.md#L360)):**
    - Spec Open Question: *"Is a Zalo user id the same when seen from two different accounts? Also test zca-js globalId."*
    - In Zalo's internal architecture, `uidFrom` is sometimes scoped to the specific user's relationship or conversation session, whereas `globalId` represents the immutable platform-wide user identifier.
-3. **Contact vs Stranger Phone Number Privacy ([Section 15](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L359)):**
+3. **Contact vs Stranger Phone Number Privacy ([Section 15](../spec.md#L359)):**
    - Spec Open Question: *"Does Zalo's `getUserInfo` give a phone number for a stranger, or only for friends?"*
    - If a stranger messages the sales representative, `getUserInfo` returns profile metadata (display name, avatar URL) but masks or omits the phone number unless the contact has explicitly shared their phone number or enabled public discovery.
    - The system must conform strictly to the privacy rule: *"A phone number is sent only if WhatsApp/Zalo gave it."*
@@ -104,14 +104,14 @@ Located in `packages/core/src/sources/zalo/ZaloSource.ts`:
   }
   ```
 - **Plain-Language User Notification (Feature C-7):**
-  - Triggers native desktop notification ([ADR 0021](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0021-desktop-process-lifecycle-sleep-wake-tray.md)):
+  - Triggers native desktop notification ([ADR 0021](0021-desktop-process-lifecycle-sleep-wake-tray.md)):
     *Title:* "Zalo connection paused"  
     *Body:* "Zalo was opened in another window. Click here to resume."
   - UI Home Screen and Status Bar render a high-visibility amber banner with a single action button: *"Reconnect Zalo"*.
 
 #### 2. Identity Mapping: `globalId` vs `uidFrom`
 Located in `packages/core/src/sources/zalo/ZaloNormalizer.ts`:
-- When normalizing messages into the canonical `Message` schema ([Section 5](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L101)):
+- When normalizing messages into the canonical `Message` schema ([Section 5](../spec.md#L101)):
   - Canonical Message ID:
     ```typescript
     message.id = `cb_zalo_${rawMsg.msgId}`;
@@ -122,7 +122,7 @@ Located in `packages/core/src/sources/zalo/ZaloNormalizer.ts`:
     - If `globalId` is not returned by older `zca-js` protocols, fallback to `uidFrom`.
 
 #### 3. Stranger Phone Number Privacy Handling
-- `getUserInfo(uid)` is queried on first contact and cached in `sessions.db` for 30 days ([Section 7 Feature S-2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L184)).
+- `getUserInfo(uid)` is queried on first contact and cached in `sessions.db` for 30 days ([Section 7 Feature S-2](../spec.md#L184)).
 - **Phone Field Mapping:**
   ```typescript
   const phone = (profile.phoneNumber && profile.phoneNumber.trim().length > 0) 

@@ -9,7 +9,7 @@
 
 ## 1. Context and Problem Statement
 
-The Chat Picker is the central privacy boundary of Chat Bridge ([Section 4](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L80), [Feature C-8](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L173)):
+The Chat Picker is the central privacy boundary of Chat Bridge ([Section 4](../spec.md#L80), [Feature C-8](../spec.md#L173)):
 - *"The rep sees a list of their chats and ticks the ones to send."*
 - ***Nothing leaves the computer until at least one chat is ticked.***
 - *"New chats start unticked."*
@@ -77,7 +77,7 @@ We choose **Option 2: Pipeline Gating with Ephemeral Feed Isolation, Local SQLit
 ### Technical Specification
 
 #### 1. Local Chat Roster Store (`chat_roster`)
-Located in `analytics.db` ([ADR 0009](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0009-local-storage-sinks-database-archive.md)):
+Located in `analytics.db` ([ADR 0009](0009-local-storage-sinks-database-archive.md)):
 ```sql
 CREATE TABLE IF NOT EXISTS chat_roster (
     thread_id TEXT PRIMARY KEY,
@@ -100,7 +100,7 @@ CREATE INDEX IF NOT EXISTS idx_chat_roster_last_msg ON chat_roster (last_message
   - Cached locally with sub-millisecond query latency; Chat Picker screen loads instantly without network lag.
 
 #### 2. Ticked Chat Selection Authority (`SettingsStore`)
-- Persisted in `settings.json` under `pickedChatIds` ([ADR 0019](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0019-application-configuration-store-secrets-segregation.md)):
+- Persisted in `settings.json` under `pickedChatIds` ([ADR 0019](0019-application-configuration-store-secrets-segregation.md)):
   ```typescript
   export interface PickedChatsConfig {
     pickedChatIds: string[]; // Set of thread IDs approved by user
@@ -121,8 +121,8 @@ CREATE INDEX IF NOT EXISTS idx_chat_roster_last_msg ON chat_roster (last_message
   ```
 
 #### 3. Unticked Ingestion & Ephemeral Feed Retention
-- Messages from unticked chats are stored in `feed.db` ([ADR 0010](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0010-message-normalization-filtering-pipeline-feed.md)) with status `filtered_unpicked`.
-- Ephemeral feed entries are encrypted at rest with envelope encryption ([ADR 0002](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0002-outbox-storage-envelope-encryption.md)) and automatically pruned after a 7-day TTL.
+- Messages from unticked chats are stored in `feed.db` ([ADR 0010](0010-message-normalization-filtering-pipeline-feed.md)) with status `filtered_unpicked`.
+- Ephemeral feed entries are encrypted at rest with envelope encryption ([ADR 0002](0002-outbox-storage-envelope-encryption.md)) and automatically pruned after a 7-day TTL.
 - Feed UI clearly labels these messages with a subtle gray badge: *"Unticked chat"*.
 
 #### 4. Ad-Hoc One-Off Message Forwarding Architecture
@@ -163,7 +163,7 @@ Located in `packages/core/src/feed/AdHocForwarder.ts`:
 ## 4. Consequences and Mitigations
 
 * **Trade-off 1:** If a sales representative receives thousands of messages per day in unticked high-traffic groups, storing them in `feed.db` could consume local disk space.
-  * *Mitigation:* The 7-day TTL pruner ([ADR 0010](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0010-message-normalization-filtering-pipeline-feed.md)) runs every 24 hours. Additionally, groups are disabled by default ([Feature C-2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L170)), so unpicked group spam is dropped at Stage 2 before even touching `feed.db`.
+  * *Mitigation:* The 7-day TTL pruner ([ADR 0010](0010-message-normalization-filtering-pipeline-feed.md)) runs every 24 hours. Additionally, groups are disabled by default ([Feature C-2](../spec.md#L170)), so unpicked group spam is dropped at Stage 2 before even touching `feed.db`.
 * **Trade-off 2:** If the user sends an ad-hoc message and then later ticks the chat, duplicate messages could potentially be queued.
   * *Mitigation:* The unique constraint on `(message_id, sink_id)` in `outbox.db` guarantees that no message can ever be delivered more than once to any sink, preventing duplicates.
 

@@ -10,11 +10,11 @@
 ## 1. Context and Problem Statement
 
 Connecting unofficial chat networks (**`baileys`** for WhatsApp, **`zca-js`** for Zalo) introduces three critical technical challenges:
-1. **Encrypted Credential Storage ([Section 6](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L140), [Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L295), [Section 14](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L347)):**  
+1. **Encrypted Credential Storage ([Section 6](../spec.md#L140), [Section 11](../spec.md#L295), [Section 14](../spec.md#L347)):**  
    The spec mandates that sessions must be encrypted on disk. Standard Baileys usage (`useMultiFileAuthState`) dumps hundreds of plaintext JSON files (Signal identity keys, pre-keys, session tokens) into a folder. This directly violates privacy rules and risks file corruption during sudden laptop lid closes or power failures. Zalo cookies and tokens (`zpw_sek`) must likewise be protected against offline disk extraction.
-2. **Identity Normalization: WhatsApp LID-to-Phone Mapping ([Feature C-6](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L175)):**  
+2. **Identity Normalization: WhatsApp LID-to-Phone Mapping ([Feature C-6](../spec.md#L175)):**  
    WhatsApp uses two address formats: phone JIDs (`<phone>@s.whatsapp.net`) and Linked Identity JIDs (`<lid>@lid`). A single customer communicating in both direct messages and group chats can present different IDs. Feature C-6 explicitly requires keeping a local LID-to-phone mapping so that one person seen by phone and by LID is delivered with **one unified person ID**.
-3. **Session Lifecycle & Inactivity Warnings ([Feature C-7](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L176)):**  
+3. **Session Lifecycle & Inactivity Warnings ([Feature C-7](../spec.md#L176)):**  
    - *WhatsApp 14-day rule:* WhatsApp automatically revokes linked companion sessions if the primary smartphone stays offline for 14 consecutive days.
    - *Zalo single web session rule:* Zalo invalidates companion web sessions whenever the account is logged into from another browser or desktop client.
 

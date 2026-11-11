@@ -10,9 +10,9 @@
 ## 1. Context and Problem Statement
 
 The spec defines two local persistent sinks that run entirely on the sales rep's computer without external cloud dependencies:
-1. **Local Database Sink ([Feature K-5](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L193)):** Stores messages in a local SQLite file with a documented, human-readable schema so external tools (Excel, Python, Datasette, PowerBI, Metabase) can query chat history directly.
-2. **Archive Sink ([Feature K-1](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L192)):** Emits one append-only JSONL file per calendar day (`YYYY-MM-DD.jsonl`). The Web UI Archive screen ([Section 10](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L284)) allows the rep to search messages by contact, date, and text.
-3. **Pluggable Multi-Sink Independence ([Feature K-0](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L191)):** The rep can turn either or both sinks on or off in Settings. Local sinks must never block cloud sinks (Margince, Google Sheets) or interfere with outbox delivery queues.
+1. **Local Database Sink ([Feature K-5](../spec.md#L193)):** Stores messages in a local SQLite file with a documented, human-readable schema so external tools (Excel, Python, Datasette, PowerBI, Metabase) can query chat history directly.
+2. **Archive Sink ([Feature K-1](../spec.md#L192)):** Emits one append-only JSONL file per calendar day (`YYYY-MM-DD.jsonl`). The Web UI Archive screen ([Section 10](../spec.md#L284)) allows the rep to search messages by contact, date, and text.
+3. **Pluggable Multi-Sink Independence ([Feature K-0](../spec.md#L191)):** The rep can turn either or both sinks on or off in Settings. Local sinks must never block cloud sinks (Margince, Google Sheets) or interfere with outbox delivery queues.
 
 We evaluated three storage topologies:
 1. **Option 1 (Monolithic Shared Database):** Storing user analytical records in the same SQLite file as the internal outbox and session credentials.
@@ -57,7 +57,7 @@ We choose **Option 2: Dual-Database Architecture (Isolated Operational vs. Analy
    - Delivery uses append streams with atomic writes (`fs.createWriteStream(filePath, { flags: 'a' })`).
    - Format: Single-line serialized `Message` JSON object terminated by `\n`.
 4. **Instantaneous UI Archive Search:**
-   - When the rep queries the Archive screen ([Section 10](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L284)) by contact, text, or date range, the UI queries the local SQLite index for fast sub-50ms responses, rather than linearly parsing multi-gigabyte flat JSONL files.
+   - When the rep queries the Archive screen ([Section 10](../spec.md#L284)) by contact, text, or date range, the UI queries the local SQLite index for fast sub-50ms responses, rather than linearly parsing multi-gigabyte flat JSONL files.
 
 ---
 

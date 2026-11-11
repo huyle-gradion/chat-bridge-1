@@ -10,15 +10,15 @@
 ## 1. Context and Problem Statement
 
 Feature **S-3** and **C-5** in `docs/spec.md` require importing past message history for picked chats:
-1. **History Import UI & Controls ([Section 7 S-3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L173), [Section 10](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L280)):** The sales rep picks chats and a start date (`since`), with a real-time progress bar and explicit **pause** and **resume** buttons.
-2. **Rate Limit Compliance ([Feature C-5](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L156)):** Importing 500 messages must strictly stay under provider limits (Margince: 60 req/min, Sheets: 60 req/min) without unhandled HTTP 429 ("slow down") errors.
-3. **Resource & Freshness Budgets ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L305-L308)):**
+1. **History Import UI & Controls ([Section 7 S-3](../spec.md#L173), [Section 10](../spec.md#L280)):** The sales rep picks chats and a start date (`since`), with a real-time progress bar and explicit **pause** and **resume** buttons.
+2. **Rate Limit Compliance ([Feature C-5](../spec.md#L156)):** Importing 500 messages must strictly stay under provider limits (Margince: 60 req/min, Sheets: 60 req/min) without unhandled HTTP 429 ("slow down") errors.
+3. **Resource & Freshness Budgets ([Section 11](../spec.md#L305-L308)):**
    - 500-message import: time from source to every active sink 95th percentile under 5s per message; peak memory under 400 MB RSS.
    - Real-time SLA: *"A new message shows in the feed within 5 seconds."*
 4. **The Head-of-Line Queue Starvation Trap:**
-   - Margince accepts a maximum of 60 requests/minute. If a sales rep initiates an import of 2,000 historical messages across several picked chats, delivering these batches takes 30 to 45 minutes under the Token Bucket rate limiter ([ADR 0005](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0005-outbox-multi-queue-worker-pacing.md)).
+   - Margince accepts a maximum of 60 requests/minute. If a sales rep initiates an import of 2,000 historical messages across several picked chats, delivering these batches takes 30 to 45 minutes under the Token Bucket rate limiter ([ADR 0005](0005-outbox-multi-queue-worker-pacing.md)).
    - If real-time incoming messages and historical backfill messages share a single FIFO queue, a new customer message arriving on WhatsApp or Zalo would be stuck behind thousands of historical records, causing a 30+ minute delay and catastrophically failing the 5-second real-time SLA.
-5. **Account Safety Risk ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L299)):** Unofficial chat libraries (`baileys`, `zca-js`) risk temporary IP bans or account restrictions if historical chat history is queried aggressively in a tight loop.
+5. **Account Safety Risk ([Section 11](../spec.md#L299)):** Unofficial chat libraries (`baileys`, `zca-js`) risk temporary IP bans or account restrictions if historical chat history is queried aggressively in a tight loop.
 
 We evaluated three architectural approaches:
 1. **Option 1 (Single Shared FIFO Outbox Queue):** Backfill messages are inserted into `sink_deliveries` with standard FIFO queue ordering.

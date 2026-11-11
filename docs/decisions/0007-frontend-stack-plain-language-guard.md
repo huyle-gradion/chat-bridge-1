@@ -9,13 +9,13 @@
 
 ## 1. Context and Problem Statement
 
-The Chat Bridge frontend represents the primary interface for non-technical sales reps ([Section 2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L48-L56)). It must provide:
-1. **Ten Dedicated Screens ([Section 10](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L263-L290)):** Home, Where to send, Feed, Filters, Archive, 5-Step Setup Wizard, Chats, Logins, Import, and Warnings.
-2. **Strict Usability & Anti-Jargon Guard ([Section 2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L55), [Section 14](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L354), [.agents/rules/AGENTS.md](file:///Users/van.tran/Documents/dev/chat-bridge/.agents/rules/AGENTS.md#L47)):**  
+The Chat Bridge frontend represents the primary interface for non-technical sales reps ([Section 2](../spec.md#L48-L56)). It must provide:
+1. **Ten Dedicated Screens ([Section 10](../spec.md#L263-L290)):** Home, Where to send, Feed, Filters, Archive, 5-Step Setup Wizard, Chats, Logins, Import, and Warnings.
+2. **Strict Usability & Anti-Jargon Guard ([Section 2](../spec.md#L55), [Section 14](../spec.md#L354), [.agents/rules/AGENTS.md](../../.agents/rules/AGENTS.md#L47)):**  
    Under no circumstances may technical developer jargon appear on user-facing screens or dialogs (*no "sink", "outbox", "JID", "regex", "nonce", or "HMAC"*). Every error message must explain the situation in plain language and clearly state the exact next click to fix it.
-3. **Design Tokens & Accessibility Compliance ([Section 14](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L353)):**  
+3. **Design Tokens & Accessibility Compliance ([Section 14](../spec.md#L353)):**  
    Colors, typography, and spacing must derive strictly from a central design tokens file. Screens must be accessible (WCAG AA) and responsive down to a 375 px mobile screen width.
-4. **Performance Budgets ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L301-L309)):**  
+4. **Performance Budgets ([Section 11](../spec.md#L301-L309)):**  
    Launch to wizard or home screen in `< 5s`. Idle memory RSS `< 250 MB`.
 5. **Bilingual Localization (Feature L-1):**  
    English and Vietnamese interface strings, switchable with zero reload lag.

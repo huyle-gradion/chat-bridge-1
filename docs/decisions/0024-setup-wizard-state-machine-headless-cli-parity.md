@@ -9,7 +9,7 @@
 
 ## 1. Context and Problem Statement
 
-On first launch, Chat Bridge must guide a non-technical sales representative through initial configuration in under 15 minutes with zero terminal interaction, no configuration files, and no technical assistance ([Section 2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L47), [Feature I-4](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L203)):
+On first launch, Chat Bridge must guide a non-technical sales representative through initial configuration in under 15 minutes with zero terminal interaction, no configuration files, and no technical assistance ([Section 2](../spec.md#L47), [Feature I-4](../spec.md#L203)):
 1. **Connect WhatsApp** (QR code or pairing code, can be skipped)
 2. **Connect Zalo** (QR code, can be skipped)
 3. **Tick chats** (Chat picker; nothing leaves the computer until at least one chat is ticked)
@@ -17,14 +17,14 @@ On first launch, Chat Bridge must guide a non-technical sales representative thr
 5. **Choose where to send** (Margince, Google Sheets, local database; configure credentials and press "Test")
 
 ### Key Architectural Challenges & Mandates
-1. **CLI and Web UI Strict Parity ([Section 7 Feature I-1](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L200)):**
+1. **CLI and Web UI Strict Parity ([Section 7 Feature I-1](../spec.md#L200)):**
    - *"Every feature ships in the web UI (what the rep sees) and the CLI (what tests and developers use) at the same time."*
-   - Headless automated tests ([ADR 0018](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0018-testing-harness-scenario-contract-runner.md)) and CLI power users must be able to drive the exact same setup flow via `chat-bridge setup`.
+   - Headless automated tests ([ADR 0018](0018-testing-harness-scenario-contract-runner.md)) and CLI power users must be able to drive the exact same setup flow via `chat-bridge setup`.
 2. **State Recovery & Crash Resilience:**
    - If the sales representative closes the laptop, switches Wi-Fi networks, or encounters a power cut during Step 3 or Step 4, onboarding must resume at the interrupted step without forcing the user to re-scan QR codes or lose selected chats.
 3. **Partial Skips & Step Reversibility:**
    - Either WhatsApp or Zalo can be skipped independently.
-   - Any completed step must be editable later from the Settings page ([Feature I-4](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L203)) using the identical underlying domain logic.
+   - Any completed step must be editable later from the Settings page ([Feature I-4](../spec.md#L203)) using the identical underlying domain logic.
 
 We evaluated three architectural options:
 1. **Option 1: Disjoint Client-Side UI State with Independent CLI Commands.**
@@ -78,7 +78,7 @@ We choose **Option 2: Unified Backend Onboarding State Machine with Persistent P
 ### Technical Specification
 
 #### 1. Persistent Onboarding State Schema
-Located in `packages/core/src/wizard/types.ts` and managed via `SettingsStore` ([ADR 0019](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0019-application-configuration-store-secrets-segregation.md)):
+Located in `packages/core/src/wizard/types.ts` and managed via `SettingsStore` ([ADR 0019](0019-application-configuration-store-secrets-segregation.md)):
 ```typescript
 export type WizardStepId = 
   | 'welcome'
@@ -120,11 +120,11 @@ Located in `packages/core/src/wizard/WizardOrchestrator.ts`:
   - `finalizeOnboarding()` enforces that at least one source is connected (or fake source active in development/test), at least one chat is ticked (`pickedChatIds.size > 0`), and at least one sink has passed verification test (`testResult.ok === true`).
   - Upon finalization:
     1. Sets `onboarding.completed = true` in `settings.json`.
-    2. Writes atomic file update ([ADR 0019](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0019-application-configuration-store-secrets-segregation.md)).
+    2. Writes atomic file update ([ADR 0019](0019-application-configuration-store-secrets-segregation.md)).
     3. Triggers outbox queue workers and connector message ingestion.
 
 #### 3. Loopback REST & SSE Endpoints
-Exposed by the local HTTP server ([ADR 0004](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0004-web-ui-transport-local-api.md)):
+Exposed by the local HTTP server ([ADR 0004](0004-web-ui-transport-local-api.md)):
 - `GET /api/v1/wizard/state`: Returns current `OnboardingState`.
 - `POST /api/v1/wizard/step/:id/complete`: Commits step payload, updates `settings.json`, returns next step.
 - `POST /api/v1/wizard/step/:id/skip`: Marks step `skipped` and advances.

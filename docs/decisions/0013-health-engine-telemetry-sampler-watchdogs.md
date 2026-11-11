@@ -10,15 +10,15 @@
 ## 1. Context and Problem Statement
 
 Features **C-1**, **C-7**, and **C-9** in `docs/spec.md` define the operational observability and alert systems for Chat Bridge:
-1. **App Health Telemetry ([Feature C-9](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L159)):**
+1. **App Health Telemetry ([Feature C-9](../spec.md#L159)):**
    - The engine must continuously measure its own CPU consumption, memory usage (RSS), queue sizes per sink, message processing rate (messages/min), and recent errors.
    - `chat-bridge status --json` returns raw numbers.
    - The UI displays a simple plain-language indicator: *"App health: good / slow / problem"*, with granular numbers accessible in one click.
-2. **Connector Watchdogs & Proactive Warnings ([Feature C-7](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L158)):**
+2. **Connector Watchdogs & Proactive Warnings ([Feature C-7](../spec.md#L158)):**
    - **WhatsApp 14-day rule:** WhatsApp permanently unlinks linked desktop devices if the primary phone remains inactive for 14 days. The app must warn the rep before this occurs.
    - **Zalo Web session conflict:** Zalo enforces a strict single-web-session rule. Logging into `chat.zalo.me` in a browser kicks the Chat Bridge desktop session.
    - Warnings must trigger both a persistent UI banner and a desktop notification with one actionable click to resolve the issue.
-3. **Resource Consumption Budget ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L302-L308)):**
+3. **Resource Consumption Budget ([Section 11](../spec.md#L302-L308)):**
    - Idle CPU must remain under **2% of one core** (5-minute average).
    - Idle memory must remain under **250 MB RSS**.
    - Continuous 2-hour runs must maintain under **10% memory growth**.

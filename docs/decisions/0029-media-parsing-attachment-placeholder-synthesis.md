@@ -9,14 +9,14 @@
 
 ## 1. Context and Problem Statement
 
-The Chat Bridge specification explicitly places binary file storage and media synchronization out of scope ([Section 3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L76), [Section 5](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L119), [Feature S-3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L185)):
+The Chat Bridge specification explicitly places binary file storage and media synchronization out of scope ([Section 3](../spec.md#L76), [Section 5](../spec.md#L119), [Feature S-3](../spec.md#L185)):
 - *"Out of scope: Files and images (we send a text line instead, for example `[image: invoice.jpg, 1.2 MB]`)"*
 - Unified message schema includes `placeholder?: text` (*"For media, for example `[image: invoice.jpg, 1.2 MB]`"*).
 - *"Media becomes a text line."*
 
 ### Architectural Challenges & Non-Functional Constraints
 1. **Strict Resource Budgets Under High Ingestion Load:**
-   - Memory budget: `< 250 MB` idle RSS, `< 400 MB` peak during a 500-message import ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L305-L307)).
+   - Memory budget: `< 250 MB` idle RSS, `< 400 MB` peak during a 500-message import ([Section 11](../spec.md#L305-L307)).
    - In WhatsApp (`baileys`), media messages (images, videos, documents, audio) do not contain raw binary files inline; they contain encrypted CDN pointers and cryptographic keys.
    - Downloading, decrypting, and storing binary files (often 10 MB to 50 MB each) would rapidly exhaust system RAM, exceed disk quotas, consume mobile tethered data, and stall event-loop processing.
 2. **Preserving Sales Rep Context Without Bloat:**
@@ -26,7 +26,7 @@ The Chat Bridge specification explicitly places binary file storage and media sy
    - Both WhatsApp and Zalo support diverse rich media types: photos, voice notes (push-to-talk), general audio files, documents/PDFs, video clips, animated stickers, location pins, and contact cards (vCards).
    - Messages frequently combine binary media with text captions (e.g. an image accompanied by "Here is the payment confirmation").
 4. **Data Privacy & Zero Leakage:**
-   - Chat Bridge must never store unencrypted thumbnails or leaked media blobs in temporary disk caches ([Section 14](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L346)).
+   - Chat Bridge must never store unencrypted thumbnails or leaked media blobs in temporary disk caches ([Section 14](../spec.md#L346)).
 
 We evaluated three architectural options:
 1. **Option 1 (Accepted): Zero-Download Protocol Envelope Metadata Extraction & Canonical Placeholder Grammar.**
@@ -139,9 +139,9 @@ We choose **Option 1: Zero-Download Protocol Envelope Metadata Extraction & Cano
 ## 4. Consequences and Mitigations
 
 * **Trade-off 1: Sales reps cannot open or download the original media file directly inside Margince or Google Sheets.**
-  * *Mitigation:* This is an intended spec constraint ([Section 3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L76)). The placeholder clearly indicates the document name and timestamp so the sales rep can immediately locate the file directly in their native phone WhatsApp or Zalo app.
+  * *Mitigation:* This is an intended spec constraint ([Section 3](../spec.md#L76)). The placeholder clearly indicates the document name and timestamp so the sales rep can immediately locate the file directly in their native phone WhatsApp or Zalo app.
 * **Trade-off 2: Missing or corrupt metadata in incoming network payloads (e.g. third-party clients stripping file names).**
   * *Mitigation:* Implement defensive fallbacks: if `fileName` is undefined, fallback to MIME-type (`[image: image/png, 450 KB]`); if `fileLength` is undefined or 0, omit size (`[image: image/png]`); if all metadata is missing, fallback to base token (`[image]`).
 * **Trade-off 3: Location and Contact privacy concerns.**
-  * *Mitigation:* Contact card phone numbers and location coordinates pass through Stage 4 Privacy Filters ([ADR 0010](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0010-message-normalization-filtering-pipeline-feed.md)). If phone number redaction is enabled, contact card phone numbers are redacted (`+8490****567`).
+  * *Mitigation:* Contact card phone numbers and location coordinates pass through Stage 4 Privacy Filters ([ADR 0010](0010-message-normalization-filtering-pipeline-feed.md)). If phone number redaction is enabled, contact card phone numbers are redacted (`+8490****567`).
 

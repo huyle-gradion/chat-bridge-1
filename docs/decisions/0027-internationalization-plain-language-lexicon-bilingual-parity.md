@@ -9,10 +9,10 @@
 
 ## 1. Context and Problem Statement
 
-Chat Bridge serves Vietnamese sales representatives collaborating with international CRM teams ([Section 2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L47), [Feature L-1](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L212)):
+Chat Bridge serves Vietnamese sales representatives collaborating with international CRM teams ([Section 2](../spec.md#L47), [Feature L-1](../spec.md#L212)):
 - *"Every screen in English and Vietnamese, switchable."*
-- Every error message must describe what happened in plain words and state the exact next click to fix it ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L310)).
-- User-facing plain-language rules prohibit developer jargon (*"sink"*, *"outbox"*, *"JID"*, *"regex"*, *"SSRF"*) on UI screens and CLI outputs ([Section 16](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L365), [AGENTS.md Rule 3](file:///Users/van.tran/Documents/dev/chat-bridge/.agents/rules/AGENTS.md)).
+- Every error message must describe what happened in plain words and state the exact next click to fix it ([Section 11](../spec.md#L310)).
+- User-facing plain-language rules prohibit developer jargon (*"sink"*, *"outbox"*, *"JID"*, *"regex"*, *"SSRF"*) on UI screens and CLI outputs ([Section 16](../spec.md#L365), [AGENTS.md Rule 3](../../.agents/rules/AGENTS.md)).
 
 ### Architectural Challenges
 1. **Zero-Drift Bilingual Parity:**
@@ -69,7 +69,7 @@ We choose **Option 2: Compile-Time Type-Safe Dictionaries in Shared `packages/i1
 ### Technical Specification
 
 #### 1. Plain-Language Canonical Lexicon
-The shared lexicon defines standard translations for internal vs user-facing concepts across both languages ([Section 16](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L365)):
+The shared lexicon defines standard translations for internal vs user-facing concepts across both languages ([Section 16](../spec.md#L365)):
 
 | Internal Concept | User-Facing English (UI & CLI) | User-Facing Vietnamese (UI & CLI) | Prohibited Jargon |
 | :--- | :--- | :--- | :--- |
@@ -158,7 +158,7 @@ Run during `pnpm lint` and GitHub Actions:
 ## 4. Consequences and Mitigations
 
 * **Trade-off 1:** Adding a new UI string requires adding entries to both `en.json` and `vi.json` simultaneously or TypeScript will fail compilation.
-  * *Mitigation:* This strict compile gate is intentional; it prevents shipping half-translated features to Vietnamese beta testers ([Charlotte Nguyen](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L6)).
+  * *Mitigation:* This strict compile gate is intentional; it prevents shipping half-translated features to Vietnamese beta testers ([Charlotte Nguyen](../spec.md#L6)).
 * **Trade-off 2:** Pluralization rules differ between English (singular/plural) and Vietnamese (classifier words).
   * *Mitigation:* The `formatMessage` utility supports ICU-style pluralization tokens (`{count, plural, one {# message} other {# messages}}`), rendering smoothly in both languages.
 

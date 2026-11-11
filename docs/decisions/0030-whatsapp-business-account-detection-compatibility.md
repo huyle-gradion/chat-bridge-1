@@ -9,7 +9,7 @@
 
 ## 1. Context and Problem Statement
 
-The Chat Bridge specification mandates support for both standard personal WhatsApp and the WhatsApp Business mobile application ([Section 3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L60), [Section 7 Feature S-3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L185)):
+The Chat Bridge specification mandates support for both standard personal WhatsApp and the WhatsApp Business mobile application ([Section 3](../spec.md#L60), [Section 7 Feature S-3](../spec.md#L185)):
 - *"WhatsApp and WhatsApp Business app: QR or pairing-code login. Messages show in the feed. History import of the ticked chats, with a progress bar."*
 - Section 5 defines the unified message schema field:  
   `network: 'zalo' | 'whatsapp' | 'whatsapp-biz' | 'fake'`
@@ -30,7 +30,7 @@ The Chat Bridge specification mandates support for both standard personal WhatsA
      - List selection messages (`listResponseMessage`).
      - Order status notifications.
      - Broadcast distribution lists (`@broadcast`).
-4. **Noise Rejection Mandate ([Feature C-4](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L172)):**
+4. **Noise Rejection Mandate ([Feature C-4](../spec.md#L172)):**
    - Business broadcast lists and newsletters must be dropped immediately and must never reach any destination sink.
 
 We evaluated three architectural options:
@@ -90,7 +90,7 @@ We choose **Option 1: Unified Baileys Connector with Dynamic Handshake Auto-Dete
      const isBusiness = Boolean(me?.isBusiness || (sock.user as any)?.biz_name);
      this.detectedNetwork = isBusiness ? 'whatsapp-biz' : 'whatsapp';
      ```
-   - This value is persisted in the encrypted connector session storage ([ADR 0006](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0006-connector-session-persistence-identity.md)).
+   - This value is persisted in the encrypted connector session storage ([ADR 0006](0006-connector-session-persistence-identity.md)).
    - Both CLI commands (`chat-bridge login whatsapp` and `chat-bridge login whatsapp-biz`) route to the same login procedure, setting an initial hint but allowing live protocol credentials to deterministically set the true `network` tag.
 
 2. **Interactive Business Payload Normalization:**
@@ -119,9 +119,9 @@ We choose **Option 1: Unified Baileys Connector with Dynamic Handshake Auto-Dete
        message.text = `[selected: ${title}${desc}]`;
        ```
 
-3. **Broadcast List & Newsletter Filtering ([Feature C-4](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L172)):**
+3. **Broadcast List & Newsletter Filtering ([Feature C-4](../spec.md#L172)):**
    - In WhatsApp Business, distribution lists are identified by JID suffix `@broadcast` or `status@broadcast`.
-   - The Stage 2 Noise Dropper ([ADR 0010](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0010-message-normalization-filtering-pipeline-feed.md)) rejects any message whose `thread` matches:
+   - The Stage 2 Noise Dropper ([ADR 0010](0010-message-normalization-filtering-pipeline-feed.md)) rejects any message whose `thread` matches:
      ```typescript
      if (msg.thread.endsWith('@broadcast') || msg.thread.endsWith('@newsletter')) {
        return { drop: true, reason: 'noise_broadcast_channel' };
