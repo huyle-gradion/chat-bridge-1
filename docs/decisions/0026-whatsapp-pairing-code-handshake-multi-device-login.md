@@ -9,7 +9,7 @@
 
 ## 1. Context and Problem Statement
 
-Connecting WhatsApp in Chat Bridge must support both camera QR scanning and pairing-code authentication ([Section 7 Feature S-3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L185)):
+Connecting WhatsApp in Chat Bridge must support both camera QR scanning and pairing-code authentication ([Section 7 Feature S-3](../spec.md#L185)):
 - Non-technical sales representatives frequently work on desktop workstations without webcams, with covered cameras, or need to link a mobile device without pointing a camera at their screen.
 - WhatsApp Multi-Device protocol provides an alternative pairing flow: the client enters their phone number with country code, the server generates an 8-character alphanumeric pairing code (e.g. `ABCD-1234`), and the rep enters this code in their WhatsApp mobile app under *Linked Devices > Link with phone number instead*.
 
@@ -18,8 +18,8 @@ Connecting WhatsApp in Chat Bridge must support both camera QR scanning and pair
    - While QR code authentication is unidirectional (engine renders ASCII or SVG QR to stream), pairing codes require a bidirectional interactive handshake: phone number submission -> socket negotiation -> code broadcast -> countdown timer -> connection confirmation.
 2. **Short Time-to-Live (TTL) & Socket Race Conditions:**
    - WhatsApp pairing codes expire within 60–120 seconds. If the user mistypes the code on their phone or takes too long, the socket closes with an authentication timeout.
-   - The user may change their mind and click *"Scan QR code instead"*, or enter a different phone number. Switching authentication modes must cleanly abort any pending pairing handshake without leaving orphaned Baileys sockets or corrupting Signal pre-keys in `sessions.db` ([ADR 0006](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0006-connector-session-persistence-identity.md)).
-3. **Headless CLI Parity ([Feature I-1](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L200)):**
+   - The user may change their mind and click *"Scan QR code instead"*, or enter a different phone number. Switching authentication modes must cleanly abort any pending pairing handshake without leaving orphaned Baileys sockets or corrupting Signal pre-keys in `sessions.db` ([ADR 0006](0006-connector-session-persistence-identity.md)).
+3. **Headless CLI Parity ([Feature I-1](../spec.md#L200)):**
    - Must be fully functional in terminal mode: `chat-bridge login whatsapp --pairing-code +84901234567`.
 
 We evaluated three architectural approaches:

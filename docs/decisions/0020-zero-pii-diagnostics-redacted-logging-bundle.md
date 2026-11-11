@@ -9,16 +9,16 @@
 
 ## 1. Context and Problem Statement
 
-When non-technical sales representatives experience runtime anomalies (such as connector disconnections, OAuth token expirations, HTTP 429 rate pacing, or network timeouts), support engineers require diagnostic telemetry to troubleshoot root causes ([Features C-1, C-9](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L168-L178)).
+When non-technical sales representatives experience runtime anomalies (such as connector disconnections, OAuth token expirations, HTTP 429 rate pacing, or network timeouts), support engineers require diagnostic telemetry to troubleshoot root causes ([Features C-1, C-9](../spec.md#L168-L178)).
 
 However, chat integration software operates under severe privacy and operational constraints:
-1. **Strict Zero-PII Mandate ([Section 14](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L341-L349)):**  
+1. **Strict Zero-PII Mandate ([Section 14](../spec.md#L341-L349)):**  
    *"No real chat data in the repo: no real phone numbers, names or messages in test data, screenshots, issues or logs."*
-2. **Zero External Tracking ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L294)):**  
+2. **Zero External Tracking ([Section 11](../spec.md#L294)):**  
    *"No tracking. Only messages that pass the filters leave, and only to sinks the rep added."*
-3. **Resource & Memory Budgets ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L305-L308)):**  
+3. **Resource & Memory Budgets ([Section 11](../spec.md#L305-L308)):**  
    The application must stay below 250 MB idle RSS and experience under 10% memory growth over 2-hour runs. Continuous, unconstrained disk logging leads to disk exhaustion and high I/O latency.
-4. **Non-Technical Usability ([Section 2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L55)):**  
+4. **Non-Technical Usability ([Section 2](../spec.md#L55)):**  
    A sales representative cannot be asked to manually search through hidden system directories (`~/Library/Logs` or `%APPDATA%`), nor can they be expected to manually scrub customer phone numbers or confidential messages from text logs before submitting a support request.
 
 We evaluated three architectural approaches:
@@ -73,7 +73,7 @@ Every log statement passes through a synchronous redaction pipeline before enter
 
 #### 2. Bounded In-Memory Ring Buffer
 - Retains up to 2,000 recent structured log entries in memory as an array-backed circular buffer.
-- Memory consumption is strictly bounded ($\approx$ 2 MB RAM), safely fitting within the 250 MB idle RSS budget ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L305)).
+- Memory consumption is strictly bounded ($\approx$ 2 MB RAM), safely fitting within the 250 MB idle RSS budget ([Section 11](../spec.md#L305)).
 - Avoids continuous background disk writing, protecting SSDs and preventing disk fill issues on sales reps' laptops.
 
 #### 3. One-Click Diagnostic Bundle Export
@@ -81,7 +81,7 @@ Available via the UI ("Settings $\to$ App Health $\to$ Export Diagnostics") and 
 1. **Generates a timestamped archive:** `chat-bridge-diagnostics-YYYY-MM-DD-HHmmss.zip`.
 2. **Contents:**
    - `logs.jsonl`: Formatted snapshot of the 2,000 redacted in-memory log entries.
-   - `telemetry.json`: Telemetry sampler metrics from [ADR 0013](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0013-health-engine-telemetry-sampler-watchdogs.md) (CPU 5-minute average, RSS memory, per-sink queue sizes, error rates).
+   - `telemetry.json`: Telemetry sampler metrics from [ADR 0013](0013-health-engine-telemetry-sampler-watchdogs.md) (CPU 5-minute average, RSS memory, per-sink queue sizes, error rates).
    - `settings-sanitized.json`: Copy of `settings.json` with picked chat IDs and blocked contacts pseudonymized using the same session salt.
    - `system.json`: OS version, CPU architecture, Electron/Node version, bridge version, and uptime.
 3. **Pre-Export Audit Linter:** An automated self-test runs across the generated zip bytes before saving, scanning for raw phone numbers, credit card patterns, or unmasked secrets. If any pattern is detected, the export is aborted with an error, preventing accidental leakage.
@@ -107,7 +107,7 @@ Located in `packages/core/test/diagnostics-redactor.test.ts`:
 ## 4. Consequences and Mitigations
 
 * **Loss of Historical Logs Prior to 2,000 Entries:** In-memory ring buffer evicts older entries during high-throughput backfill runs.  
-  * *Mitigation:* The 2,000-entry capacity is tuned to capture at least 30 minutes of typical activity. Furthermore, persistent error counts and rate-limiting metrics are permanently tracked in the telemetry sampler ([ADR 0013](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0013-health-engine-telemetry-sampler-watchdogs.md)).
+  * *Mitigation:* The 2,000-entry capacity is tuned to capture at least 30 minutes of typical activity. Furthermore, persistent error counts and rate-limiting metrics are permanently tracked in the telemetry sampler ([ADR 0013](0013-health-engine-telemetry-sampler-watchdogs.md)).
 * **Crash Snapshot on Hard Segfault:** A hard C++ native crash (e.g. native SQLite segfault) might terminate the process before the ring buffer can be dumped.  
   * *Mitigation:* Electron's crash reporter is configured to dump minidumps without heap memory to local disk, and Node's `process.on('uncaughtException')` catches JavaScript errors and synchronously writes `crash-snapshot.json` before exiting.
 

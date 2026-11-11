@@ -14,12 +14,12 @@ Chat Bridge operates with two frontend deployment surfaces driven by a single un
 2. **CLI Browser Mode (Feature I-2, Section 9):** Developers and testers running `chat-bridge ui`, which serves the web interface directly to their system browser.
 
 Both operational modes require:
-- **Interactive Commands:** Picking chats ([C-8](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L173)), toggling filters ([C-2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L170)), configuring/testing sinks ([K-0](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L191)), initiating manual message sends.
-- **Real-Time Event Streaming:** Streaming dynamic QR codes for Zalo and WhatsApp logins ([S-2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L184), [S-3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L185)), live feed updates as messages arrive ([C-1](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L169)), real-time import progress counters ([S-3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L185)), and engine health telemetry ([C-9](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L177)).
+- **Interactive Commands:** Picking chats ([C-8](../spec.md#L173)), toggling filters ([C-2](../spec.md#L170)), configuring/testing sinks ([K-0](../spec.md#L191)), initiating manual message sends.
+- **Real-Time Event Streaming:** Streaming dynamic QR codes for Zalo and WhatsApp logins ([S-2](../spec.md#L184), [S-3](../spec.md#L185)), live feed updates as messages arrive ([C-1](../spec.md#L169)), real-time import progress counters ([S-3](../spec.md#L185)), and engine health telemetry ([C-9](../spec.md#L177)).
 
 ### Security & Resource Constraints
 - **Strict Privacy & Anti-Snooping:** The web server must listen strictly on `localhost` (`127.0.0.1`). Because the bridge processes private chat conversations and contact data, an unauthenticated local HTTP port would expose the rep to Cross-Site Request Forgery (CSRF) and DNS rebinding attacks from arbitrary web pages running in the rep's browser.
-- **Resource Budget:** Idle CPU must remain `< 2%` of one core, and idle memory `< 250 MB` RSS ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L301-L309)). Constant polling for UI state destroys the CPU budget.
+- **Resource Budget:** Idle CPU must remain `< 2%` of one core, and idle memory `< 250 MB` RSS ([Section 11](../spec.md#L301-L309)). Constant polling for UI state destroys the CPU budget.
 
 We evaluated three architectural approaches:
 1. **Option 1 (Electron IPC + Separate CLI Web Server):** Use native Electron `ipcRenderer`/`ipcMain` in Desktop, and build a secondary HTTP server for `chat-bridge ui`.

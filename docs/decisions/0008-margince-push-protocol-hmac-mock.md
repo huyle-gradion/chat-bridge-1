@@ -9,12 +9,12 @@
 
 ## 1. Context and Problem Statement
 
-Margince CRM is the primary destination (*sink*) for Chat Bridge ([Section 1](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L35-L45), [Feature K-4](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L195)). The communication architecture is defined by the Margince `openchannel` extension specification (`extensions/openchannel` and `backend/pkg/extension/inbound.go` in `margince/margince`):
+Margince CRM is the primary destination (*sink*) for Chat Bridge ([Section 1](../spec.md#L35-L45), [Feature K-4](../spec.md#L195)). The communication architecture is defined by the Margince `openchannel` extension specification (`extensions/openchannel` and `backend/pkg/extension/inbound.go` in `margince/margince`):
 1. **Unidirectional Outbound Calls:** Chat Bridge always calls out to Margince; Margince never calls the rep's computer, removing any need for public IP addresses, NAT traversal, or tunnels.
 2. **Cryptographic Request Signing (HMAC-SHA256):** Every HTTP push request must be signed over a scope, endpoint slug, endpoint ref, timestamp, nonce, and message payload.
-3. **Anti-Replay Security ([Section 13](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L337)):** Tamper-proof replay defense: replaying a captured network request must be refused. Margince returns an opaque 401 Unauthorized for replayed nonces, invalid signatures, or expired timestamps to avoid endpoint enumeration.
-4. **Mock Server & Contract Equality ([Section 14](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L347)):** The AI agent and automated test suite must run 100% offline using the Mock Margince Server. The mock server and the live Margince instance must satisfy the exact same contract test suite.
-5. **Non-Technical Usability ([Feature K-4](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L195)):** The sales rep connects to Margince simply by pasting a single connection string.
+3. **Anti-Replay Security ([Section 13](../spec.md#L337)):** Tamper-proof replay defense: replaying a captured network request must be refused. Margince returns an opaque 401 Unauthorized for replayed nonces, invalid signatures, or expired timestamps to avoid endpoint enumeration.
+4. **Mock Server & Contract Equality ([Section 14](../spec.md#L347)):** The AI agent and automated test suite must run 100% offline using the Mock Margince Server. The mock server and the live Margince instance must satisfy the exact same contract test suite.
+5. **Non-Technical Usability ([Feature K-4](../spec.md#L195)):** The sales rep connects to Margince simply by pasting a single connection string.
 
 We evaluated three integration architectures:
 1. **Option 1 (Ad-hoc API Key / Bearer Token Header):** Simple authorization header, but lacks anti-replay protection and endpoint scoping.

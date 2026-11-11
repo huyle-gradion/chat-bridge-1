@@ -3,21 +3,21 @@
 * **Status:** Accepted
 * **Date:** 2026-11-04
 * **Deciders:** Team / Project Lead
-* **Consulted:** `docs/spec.md` (Sections 3, 7 [Feature I-3], 11, 14, 16), `.agents/rules/AGENTS.md`, [ADR 0009](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0009-local-storage-sinks-database-archive.md), [ADR 0014](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0014-human-in-the-loop-replies-pull-ack-state-machine.md)
+* **Consulted:** `docs/spec.md` (Sections 3, 7 [Feature I-3], 11, 14, 16), `.agents/rules/AGENTS.md`, [ADR 0009](0009-local-storage-sinks-database-archive.md), [ADR 0014](0014-human-in-the-loop-replies-pull-ack-state-machine.md)
 
 ---
 
 ## 1. Context and Problem Statement
 
 Sections 3 and 7 of `docs/spec.md` specify the Model Context Protocol (MCP) server under the "Should" scope:
-1. **Feature I-3 Definition ([Section 7](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L213)):**
+1. **Feature I-3 Definition ([Section 7](../spec.md#L213)):**
    - *"A read-only MCP server."*
    - *"stdio or HTTP on localhost."*
    - *"Tools: list threads, search messages, read a thread. Send is off by default and asks every time."*
-2. **Absolute Anti-Spam & Zero-Autonomous-Send Invariant ([Section 3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L78), [Section 14](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L347)):**
+2. **Absolute Anti-Spam & Zero-Autonomous-Send Invariant ([Section 3](../spec.md#L78), [Section 14](../spec.md#L347)):**
    - *"Automatic or bulk sending. Never."*
    - AI agents (Claude Desktop, Cursor, local LLMs) must never be able to autonomously broadcast or send chat messages over connected Zalo or WhatsApp accounts without explicit human authorization.
-3. **Data Isolation & Read Privacy ([Section 2, 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L52,L294)):**
+3. **Data Isolation & Read Privacy ([Section 2, 11](../spec.md#L52,L294)):**
    - Only messages that the rep explicitly selected in the Chat Picker and that passed all privacy filters (dropped OTPs, blocked contacts, groups disabled) may ever be visible.
    - Live outbox queues and internal engine databases must be protected from SQLite read locks and memory contention.
 
@@ -63,9 +63,9 @@ We choose **Option 2: Dedicated CLI `stdio` MCP Server over Analytical SQLite Re
 
 #### 2. Read Isolation & Privacy Guarantees
 - The MCP process does **not** query the internal engine outbox or live memory caches.
-- It opens the dedicated analytical SQLite database (`chat-bridge-analytical.db` established in [ADR 0009](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0009-local-storage-sinks-database-archive.md)) with the SQLite flag `{ readonly: true, fileMustExist: true }`.
+- It opens the dedicated analytical SQLite database (`chat-bridge-analytical.db` established in [ADR 0009](0009-local-storage-sinks-database-archive.md)) with the SQLite flag `{ readonly: true, fileMustExist: true }`.
 - **Architectural Advantages:**
-  1. **Strict Privacy:** The analytical database contains only messages that have already passed through the 6-stage normalization and filter pipeline ([ADR 0010](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0010-message-normalization-filtering-pipeline-feed.md)) and were ticked in the Chat Picker. Private chats, OTPs, stories, and blocked contacts are physically absent.
+  1. **Strict Privacy:** The analytical database contains only messages that have already passed through the 6-stage normalization and filter pipeline ([ADR 0010](0010-message-normalization-filtering-pipeline-feed.md)) and were ticked in the Chat Picker. Private chats, OTPs, stories, and blocked contacts are physically absent.
   2. **Zero Concurrency Penalties:** SQLite WAL mode allows concurrent read connections without blocking engine write transactions.
   3. **Offline Availability:** Tools can query historical conversations even if the primary Electron desktop UI application is closed.
 
@@ -84,7 +84,7 @@ In compliance with the spec requirement (*"Send is off by default and asks every
    chat-bridge mcp --enable-mcp-send
    ```
 2. When enabled, invoking `send_message(thread, text)` does **not** call any source connector or transmit messages to Zalo or WhatsApp.
-3. Instead, it writes a staged record into the `inbox_replies` table ([ADR 0014](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0014-human-in-the-loop-replies-pull-ack-state-machine.md)):
+3. Instead, it writes a staged record into the `inbox_replies` table ([ADR 0014](0014-human-in-the-loop-replies-pull-ack-state-machine.md)):
    - `status`: `'pending_user_click'`
    - `source`: `'mcp_ai_assistant'`
    - `text`: the suggested draft

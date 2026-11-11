@@ -11,15 +11,15 @@
 
 Between receiving raw chat events from connectors (WhatsApp, Zalo, Fake) and enqueuing messages into the encrypted Outbox for multi-sink delivery, the engine must enforce strict privacy controls, noise rejection, and user-defined routing rules:
 
-1. **Noise Dropping ([Feature C-4](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L154)):** Broadcast stories (`status@broadcast`), newsletter channels, emoji reactions, message edits, and typing notifications must never reach a sink.
-2. **Chat Picker Enforcement ([Feature C-8](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L155)):** Sales reps tick specific chats that are permitted to leave the computer. **Nothing leaves the computer until at least one chat is ticked.** New chats start unticked.
-3. **Privacy & Policy Filters ([Feature C-2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L152)):**
+1. **Noise Dropping ([Feature C-4](../spec.md#L154)):** Broadcast stories (`status@broadcast`), newsletter channels, emoji reactions, message edits, and typing notifications must never reach a sink.
+2. **Chat Picker Enforcement ([Feature C-8](../spec.md#L155)):** Sales reps tick specific chats that are permitted to leave the computer. **Nothing leaves the computer until at least one chat is ticked.** New chats start unticked.
+3. **Privacy & Policy Filters ([Feature C-2](../spec.md#L152)):**
    - Groups are disabled by default.
    - Blocked contact list (`from.accountId` or phone number).
    - Regex/text pattern filters (e.g., automated OTP code filtering `\b\d{4,8}\b` enabled by default).
    - Phone number privacy redaction ("hide phone numbers").
-4. **Feed Observability & Manual Override ([Feature C-8](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L155), [Section 10](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L274)):** The UI Feed screen must display messages as they arrive classified as `sent`, `filtered`, `dropped`, or `waiting`. Reps can select unticked or filtered messages and trigger a manual one-off push ("send these messages").
-5. **Privacy & Security Constraints ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L295-L298)):** Cleartext customer PII, phone numbers, and chat contents must never be stored unencrypted on disk, even when retained for the local Feed preview.
+4. **Feed Observability & Manual Override ([Feature C-8](../spec.md#L155), [Section 10](../spec.md#L274)):** The UI Feed screen must display messages as they arrive classified as `sent`, `filtered`, `dropped`, or `waiting`. Reps can select unticked or filtered messages and trigger a manual one-off push ("send these messages").
+5. **Privacy & Security Constraints ([Section 11](../spec.md#L295-L298)):** Cleartext customer PII, phone numbers, and chat contents must never be stored unencrypted on disk, even when retained for the local Feed preview.
 
 We evaluated three architectural approaches:
 1. **Option 1 (In-Memory Drop & Forget Pipeline):** Raw events failing filters or chat picker checks are discarded in RAM immediately without disk writes.
@@ -58,10 +58,10 @@ We choose **Option 2: Unified 6-Stage Sequential Pipeline with Ephemeral Encrypt
 
 1. **Stage 1: Normalizer (`normalizer.ts`):**
    - Ingests raw events from `SourceContract` (`onMessage`).
-   - Maps network-specific payloads into the standard `Message` schema ([Section 5](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L97-L114)).
+   - Maps network-specific payloads into the standard `Message` schema ([Section 5](../spec.md#L97-L114)).
    - Truncates message text exceeding 32,768 characters and sets `truncated: true`.
    - Converts binary attachments into descriptive placeholders (e.g., `[image: invoice.jpg, 1.2 MB]`).
-   - Resolves WhatsApp LID to canonical phone number via the local LID map ([ADR 0006](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0006-connector-session-persistence-identity.md)).
+   - Resolves WhatsApp LID to canonical phone number via the local LID map ([ADR 0006](0006-connector-session-persistence-identity.md)).
 2. **Stage 2: Noise Dropper (`noise_filter.ts`):**
    - Matches and drops:
      - WhatsApp broadcast stories (`status@broadcast`).
@@ -84,11 +84,11 @@ We choose **Option 2: Unified 6-Stage Sequential Pipeline with Ephemeral Encrypt
      matches one-time passwords and verification codes. If matched, assigned status `filtered_pattern`.
 5. **Stage 5: Data Redactor (`data_redactor.ts`):**
    - If the user enables "hide phone numbers", phone numbers in `from.phone` and message text are masked (`+8498***123`) for sinks that don't need raw identity (e.g., Google Sheets, Local Analytical DB).
-   - For Margince, the raw phone number is preserved in the CRM envelope so Tam's PR can trigger the contact review card ([Section 8](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L243-L245)), unless the rep explicitly checks "Mask phone numbers sent to Margince".
+   - For Margince, the raw phone number is preserved in the CRM envelope so Tam's PR can trigger the contact review card ([Section 8](../spec.md#L243-L245)), unless the rep explicitly checks "Mask phone numbers sent to Margince".
 6. **Stage 6: Outbox Enqueue (`outbox_writer.ts`):**
-   - Encrypts payload with AES-256-GCM ([ADR 0002](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0002-outbox-storage-envelope-encryption.md)).
+   - Encrypts payload with AES-256-GCM ([ADR 0002](0002-outbox-storage-envelope-encryption.md)).
    - Writes `messages` row and creates `pending` rows in `sink_deliveries` for all active sinks.
-   - Emits reactive wake event `outbox:queued` ([ADR 0005](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0005-outbox-multi-queue-worker-pacing.md)).
+   - Emits reactive wake event `outbox:queued` ([ADR 0005](0005-outbox-multi-queue-worker-pacing.md)).
 
 ### 2. Ephemeral Feed Persistence & Privacy Model
 

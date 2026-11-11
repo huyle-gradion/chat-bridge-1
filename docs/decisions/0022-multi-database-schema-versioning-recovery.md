@@ -10,18 +10,18 @@
 ## 1. Context and Problem Statement
 
 Chat Bridge operates three distinct SQLite databases on the user's local filesystem:
-1. **`outbox.db`:** The primary encrypted outbox database with multi-queue sink tracking, envelope-encrypted payloads, idempotency tables, and retry state ([ADR 0002](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0002-outbox-storage-envelope-encryption.md), [ADR 0005](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0005-outbox-multi-queue-worker-pacing.md)).
-2. **`analytics.db`:** The dedicated unencrypted analytical database for local querying and external business intelligence tools ([ADR 0009](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0009-local-storage-sinks-database-archive.md)).
-3. **`sessions.db`:** The encrypted credential store for Baileys Signal keys, Zalo authentication tokens, and WhatsApp LID-to-phone mapping tables ([ADR 0006](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0006-connector-session-persistence-identity.md)).
+1. **`outbox.db`:** The primary encrypted outbox database with multi-queue sink tracking, envelope-encrypted payloads, idempotency tables, and retry state ([ADR 0002](0002-outbox-storage-envelope-encryption.md), [ADR 0005](0005-outbox-multi-queue-worker-pacing.md)).
+2. **`analytics.db`:** The dedicated unencrypted analytical database for local querying and external business intelligence tools ([ADR 0009](0009-local-storage-sinks-database-archive.md)).
+3. **`sessions.db`:** The encrypted credential store for Baileys Signal keys, Zalo authentication tokens, and WhatsApp LID-to-phone mapping tables ([ADR 0006](0006-connector-session-persistence-identity.md)).
 
 ### Architectural Challenges & Constraints
-- **Zero Data Loss Guarantee ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L296)):** *"A crash, a reboot or a closed laptop loses no message that reached the outbox."*
-- **Application Startup Budget ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L303)):** App startup from cold launch to wizard/home screen must complete in **under 5 seconds**. Heavy ORM migration engines (Prisma, TypeORM) add multiple seconds of binary initialization latency and heavy memory overhead.
+- **Zero Data Loss Guarantee ([Section 11](../spec.md#L296)):** *"A crash, a reboot or a closed laptop loses no message that reached the outbox."*
+- **Application Startup Budget ([Section 11](../spec.md#L303)):** App startup from cold launch to wizard/home screen must complete in **under 5 seconds**. Heavy ORM migration engines (Prisma, TypeORM) add multiple seconds of binary initialization latency and heavy memory overhead.
 - **Atomic Schema Evolution:** As the product evolves across versions (e.g. Month 2 sprints to final release), table schemas, indexes, and constraints will change. If an update or migration fails mid-flight due to an OS power cut, the database must not be left in an inconsistent, half-migrated state.
 - **Disaster Scenarios & Storage Edge Cases:**
   - `SQLITE_CORRUPT`: Rare page corruptions caused by hardware failure or sudden kernel panic.
   - `SQLITE_FULL`: The user's laptop disk runs out of space during high-throughput message ingestion.
-- **Non-Technical User Guard ([Section 2, 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L55)):** Non-technical sales representatives must never see raw SQLite error codes (`SQLITE_CORRUPT`, `SQLITE_FULL`, `SQLITE_BUSY`). The application must auto-heal when possible and provide clear, plain-language error dialogs with one-click actions.
+- **Non-Technical User Guard ([Section 2, 11](../spec.md#L55)):** Non-technical sales representatives must never see raw SQLite error codes (`SQLITE_CORRUPT`, `SQLITE_FULL`, `SQLITE_BUSY`). The application must auto-heal when possible and provide clear, plain-language error dialogs with one-click actions.
 
 We evaluated three architectural approaches:
 1. **Option 1: Heavyweight Node ORM Migration Frameworks (Prisma / TypeORM / Knex).**
@@ -89,13 +89,13 @@ Located in `packages/core/src/storage/migrations/`:
 - If an unrecoverable failure occurs during migration, the application can safely restore the pre-migration snapshot and flag a plain-language diagnostic warning without corrupting existing records.
 
 #### 3. Integrity Verification & Auto-Quarantine (`quick_check`)
-- **Fast Integrity Probe:** On every database connection open, the engine executes `PRAGMA quick_check(10)`. This sub-50ms check inspects SQLite page linkages and B-tree headers without scanning entire gigabyte databases, fitting comfortably within the 5-second startup budget ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L303)).
+- **Fast Integrity Probe:** On every database connection open, the engine executes `PRAGMA quick_check(10)`. This sub-50ms check inspects SQLite page linkages and B-tree headers without scanning entire gigabyte databases, fitting comfortably within the 5-second startup budget ([Section 11](../spec.md#L303)).
 - **Corrupted Database Recovery Routine:**
   If `quick_check` returns anything other than `ok` or a `SQLITE_CORRUPT` error is caught:
   1. Closes the corrupted database connection immediately.
   2. Moves the corrupted file to `<database-path>.corrupted.<timestamp>.bak`.
   3. Executes SQLite salvage recovery (`better-sqlite3` backup / `.recover` API) into a newly initialized database.
-  4. For `outbox.db`, missing messages that were not yet acknowledged by active sinks are automatically re-queued from the 7-day ephemeral feed store ([ADR 0010](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0010-message-normalization-filtering-pipeline-feed.md)).
+  4. For `outbox.db`, missing messages that were not yet acknowledged by active sinks are automatically re-queued from the 7-day ephemeral feed store ([ADR 0010](0010-message-normalization-filtering-pipeline-feed.md)).
 
 #### 4. Disk Full (`SQLITE_FULL`) Graceful Guard
 - When the host filesystem runs out of free space, `better-sqlite3` throws `SqliteError: database or disk is full` (`SQLITE_FULL`).

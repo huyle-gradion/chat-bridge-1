@@ -10,8 +10,8 @@
 ## 1. Context and Problem Statement
 
 Sections 3 and 7 of `docs/spec.md` define the Webhook Sink as part of the "Should" scope:
-1. **Feature K-2 Definition ([Section 7](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L215)):** *"Sends signed batches of messages as JSON to a URL the rep gives."*
-2. **Sink Contract Alignment ([Section 6](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L149-L158)):** The Webhook provider must implement `SinkContract` (`configure(settings)`, `test()`, `deliver(batch)`, `health()`, and declare rate/batch `limits`).
+1. **Feature K-2 Definition ([Section 7](../spec.md#L215)):** *"Sends signed batches of messages as JSON to a URL the rep gives."*
+2. **Sink Contract Alignment ([Section 6](../spec.md#L149-L158)):** The Webhook provider must implement `SinkContract` (`configure(settings)`, `test()`, `deliver(batch)`, `health()`, and declare rate/batch `limits`).
 3. **The Security Threat - Server-Side Request Forgery (SSRF) and DNS Rebinding:**
    - Chat Bridge runs locally on the user's desktop computer within corporate or residential intranets.
    - Allowing users to enter an arbitrary HTTP target URL opens critical vulnerabilities if not guarded:
@@ -19,7 +19,7 @@ Sections 3 and 7 of `docs/spec.md` define the Webhook Sink as part of the "Shoul
      - **Cloud Metadata Harvesting:** Querying link-local cloud metadata services (`http://169.254.169.254/latest/meta-data/`) if the user runs on cloud-hosted remote desktop instances.
      - **Loopback Exploitation:** Hitting local loopback services (`http://127.0.0.1:3000` or `http://localhost:8080`) to bypass local authentication.
      - **Time-of-Check to Time-of-Use (TOCTOU) DNS Rebinding:** An attacker controls a domain that initially resolves to a public IP during the configuration check (`test()`), but short TTL DNS expires and resolves to `127.0.0.1` during actual message batch delivery (`deliver()`).
-4. **UX & Plain-Language Guard ([Section 2, 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L55-L57)):** The setup screen ("Where to send") must validate inputs clearly and never expose raw networking jargon like "CIDR", "SSRF", or "SocketException" to the non-technical sales rep.
+4. **UX & Plain-Language Guard ([Section 2, 11](../spec.md#L55-L57)):** The setup screen ("Where to send") must validate inputs clearly and never expose raw networking jargon like "CIDR", "SSRF", or "SocketException" to the non-technical sales rep.
 
 We evaluated three architectural options:
 1. **Option 1: Standard Unchecked HTTP Client with String Regex Validation.**
@@ -123,7 +123,7 @@ The webhook delivers messages matching the normalized shape defined in `docs/spe
 - Header: `X-ChatBridge-Timestamp: <ISO-8601>`
 - Header: `X-ChatBridge-Delivery: <batchId>`
 - Calculation: `HMAC-SHA256(secretKey, "${timestamp}.${rawBody}")`
-- The user can input their own webhook signing secret or click "Generate Secret" in the UI. Secrets are encrypted at rest using the OS Keystore ([ADR 0002](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0002-outbox-storage-envelope-encryption.md)).
+- The user can input their own webhook signing secret or click "Generate Secret" in the UI. Secrets are encrypted at rest using the OS Keystore ([ADR 0002](0002-outbox-storage-envelope-encryption.md)).
 
 #### 4. Sink Contract Implementation Details
 - **`configure(settings)`:** Validates URL schema, checks secret length (min 16 chars).
@@ -131,7 +131,7 @@ The webhook delivers messages matching the normalized shape defined in `docs/spe
 - **`limits`:** Default batch size = 50 messages; rate limit = 60 requests/minute.
 - **`deliver(batch)`:**
   - HTTP `200/201/204`: All messages marked `accepted`.
-  - HTTP `429` (Rate Limited) or `500/502/503/504`: Temporary failure, worker triggers Token Bucket exponential backoff with jitter ([ADR 0005](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0005-outbox-multi-queue-worker-pacing.md)).
+  - HTTP `429` (Rate Limited) or `500/502/503/504`: Temporary failure, worker triggers Token Bucket exponential backoff with jitter ([ADR 0005](0005-outbox-multi-queue-worker-pacing.md)).
   - HTTP `400/401/403/404/422`: Unrecoverable client error; batch marked `refused` with plain-language description and warning logged to UI status banner.
 
 ---

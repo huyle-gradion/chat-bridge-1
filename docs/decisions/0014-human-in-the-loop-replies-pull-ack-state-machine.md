@@ -10,15 +10,15 @@
 ## 1. Context and Problem Statement
 
 Sections 3, 7, and 8 of `docs/spec.md` specify the protocol and user experience for handling customer replies originating from Margince CRM:
-1. **Scope and Priority ([Section 3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L71), [Features R-1, R-2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L205-L208)):** In "Should" scope (Priority 1), Margince customer replies appear in a dedicated UI inbox (via pull) and are transmitted to the recipient chat network.
-2. **Absolute Anti-Spam Safety Invariant ([Section 3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L83), [Feature R-2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L208)):**
+1. **Scope and Priority ([Section 3](../spec.md#L71), [Features R-1, R-2](../spec.md#L205-L208)):** In "Should" scope (Priority 1), Margince customer replies appear in a dedicated UI inbox (via pull) and are transmitted to the recipient chat network.
+2. **Absolute Anti-Spam Safety Invariant ([Section 3](../spec.md#L83), [Feature R-2](../spec.md#L208)):**
    - *"A reply is sent only after **one human click**."*
    - *"Never retried automatically."*
    - *"Automatic or bulk sending. **Never.**"*
-3. **Margince Pull/Ack Protocol ([Section 8](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L225-L235)):**
+3. **Margince Pull/Ack Protocol ([Section 8](../spec.md#L225-L235)):**
    - **Pull:** `POST /webhooks/ext/openchannel/pull/{ref}` requesting waiting replies.
    - **Ack:** `POST /webhooks/ext/openchannel/ack/{ref}` confirming `sent` or `failed` with reason.
-   - All requests must use the canonical HMAC-SHA256 signature scheme with endpoint-scoped slugs (`pull` and `ack`) to prevent signature reuse ([ADR 0008](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0008-margince-push-protocol-hmac-mock.md)).
+   - All requests must use the canonical HMAC-SHA256 signature scheme with endpoint-scoped slugs (`pull` and `ack`) to prevent signature reuse ([ADR 0008](0008-margince-push-protocol-hmac-mock.md)).
 4. **Architectural Challenge:** The codebase must provide physical, architectural prevention against any background automation or batch job ever auto-sending messages without explicit, verified human UI intervention.
 
 We evaluated three reply architectures:
@@ -74,7 +74,7 @@ We choose **Option 2: Staged Replies Storage with Single-Use Action Token Gate &
 
 1. When the Margince sink is active, a background `PullWorker` executes periodically:
    - Request: `POST /webhooks/ext/openchannel/pull/{ref}` with `{ "limit": 10 }`.
-   - Signed with HMAC-SHA256 using slug `pull` ([ADR 0008](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0008-margince-push-protocol-hmac-mock.md)).
+   - Signed with HMAC-SHA256 using slug `pull` ([ADR 0008](0008-margince-push-protocol-hmac-mock.md)).
 2. **Adaptive Polling Cadence:**
    - Active state (replies received or user active in UI): Polls every **30 seconds**.
    - Idle state (zero replies over 10 consecutive checks): Backs off to **120 seconds** to preserve the Margince 60 req/min quota.

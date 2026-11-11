@@ -14,7 +14,7 @@ Feature **C-3**, **C-5**, and **K-0** in `docs/spec.md` require:
 2. **Pacing and Rate Limiting:** Outbound calls must strictly respect each provider's quotas (Margince: 60 requests/minute per IP, 120 per endpoint; Google Sheets: 60 write requests/minute per user). On HTTP 429 ("slow down") or network disconnections, deliveries must pause and back off automatically.
 3. **Crash & Power Loss Safety:** Sudden laptop lid closes, system restarts, or app crashes must result in zero message loss. Queued deliveries must safely resume upon startup.
 4. **Permanent vs. Transient Failures:** Messages rejected permanently (`refused`, invalid schema, or unauthorized credentials) must not be retried infinitely; their failure reason must be recorded in plain language for the user.
-5. **Resource Budgets:** Idle CPU must remain `< 2%` of one core, and 2-hour continuous test runs must demonstrate `< 10%` memory growth with zero unbounded queue leaks ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L301-L309)).
+5. **Resource Budgets:** Idle CPU must remain `< 2%` of one core, and 2-hour continuous test runs must demonstrate `< 10%` memory growth with zero unbounded queue leaks ([Section 11](../spec.md#L301-L309)).
 
 We evaluated three architectural approaches:
 1. **Option 1 (Polling Interval Timers per Sink):** Each sink executes an independent `setInterval` timer polling SQLite every 500–1000ms.

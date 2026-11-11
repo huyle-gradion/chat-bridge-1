@@ -9,7 +9,7 @@
 
 ## 1. Context and Problem Statement
 
-A core usability requirement for Chat Bridge is non-technical self-sufficiency ([Section 2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L47), [Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L293)):
+A core usability requirement for Chat Bridge is non-technical self-sufficiency ([Section 2](../spec.md#L47), [Section 11](../spec.md#L293)):
 - *"Every screen says what to do next in one plain sentence. Every error says what happened and what to click."*
 - Feature **C-7** mandates proactive warnings:  
   *"Warn before the WhatsApp 14-day logout, and when Zalo Web takes over the session. A banner in the UI and a desktop notification, each with the one thing to do."*
@@ -124,7 +124,7 @@ We choose **Option 1: Centralized Alert Registry & Action Remediation Dispatcher
        notification.show();
      });
      ```
-   - When active critical alerts exist, the System Tray icon displays an alert badge (amber dot or badge count) per [ADR 0021](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0021-desktop-process-lifecycle-sleep-wake-tray.md).
+   - When active critical alerts exist, the System Tray icon displays an alert badge (amber dot or badge count) per [ADR 0021](0021-desktop-process-lifecycle-sleep-wake-tray.md).
 
 4. **15-Minute Anti-Spam Debounce Window:**
    - A raised alert is published immediately on its first occurrence.

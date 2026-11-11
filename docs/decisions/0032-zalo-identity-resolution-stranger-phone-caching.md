@@ -9,14 +9,14 @@
 
 ## 1. Context and Problem Statement
 
-Section 15 of `docs/spec.md` records two critical open architectural questions regarding Zalo customer identification ([Section 15](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L357-L361)):
+Section 15 of `docs/spec.md` records two critical open architectural questions regarding Zalo customer identification ([Section 15](../spec.md#L357-L361)):
 1. *"Does Zalo's `getUserInfo` give a phone number for a stranger, or only for friends? Test it early."*
 2. *"Is a Zalo user id the same when seen from two different accounts? Also test zca-js `globalId`."*
 
 Additionally, Section 5 and Feature **S-2** impose strict privacy and performance mandates:
 - *"Sender id = `uidFrom`. `getUserInfo` is called once per new sender, then cached."*
 - Section 5: `from: person: { accountId, displayName, phone? }`. ***Phone sent only if the network gave it, never guessed.***
-- Inbound latency budget: New messages must appear in the local feed within 5 seconds ([Feature S-2](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L184)).
+- Inbound latency budget: New messages must appear in the local feed within 5 seconds ([Feature S-2](../spec.md#L184)).
 
 ### Underlying Technical & Privacy Constraints
 1. **Zalo User Privacy Policy & Stranger Phone Concealment:**
@@ -105,7 +105,7 @@ We choose **Option 1: Two-Tier Identity Cache with Privacy-Compliant Phone Omiss
 2. **In-Memory Two-Tier Cache Architecture:**
    - A fast LRU cache (`capacity = 1,000` entries) sits in front of SQLite inside `ZaloIdentityManager`.
    - **L1 (In-Memory LRU):** Sub-millisecond lookup (`< 0.05 ms`), zero disk I/O for frequent contacts in active conversations.
-   - **L2 (SQLite Table):** Persists across app restarts and power sleep/wake cycles ([ADR 0021](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0021-desktop-process-lifecycle-sleep-wake-tray.md)).
+   - **L2 (SQLite Table):** Persists across app restarts and power sleep/wake cycles ([ADR 0021](0021-desktop-process-lifecycle-sleep-wake-tray.md)).
    - **L3 (Network Fallback):** Calls `zca-js.getUserInfo(uid)` strictly on cache misses.
 
 3. **Privacy-Safe Phone Resolution & Omission Rule:**
@@ -129,7 +129,7 @@ We choose **Option 1: Two-Tier Identity Cache with Privacy-Compliant Phone Omiss
 5. **Cache Eviction & Expiry (TTL):**
    - Cache records carry a **7-day TTL** ($604,800\text{ s}$).
    - Expired records are lazily refreshed upon the next inbound message from that sender.
-   - When a sales rep manually refreshes the Chat Picker roster ([ADR 0028](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0028-chat-roster-discovery-dynamic-chat-picker-adhoc-push.md)), active identities have their names refreshed.
+   - When a sales rep manually refreshes the Chat Picker roster ([ADR 0028](0028-chat-roster-discovery-dynamic-chat-picker-adhoc-push.md)), active identities have their names refreshed.
 
 ---
 

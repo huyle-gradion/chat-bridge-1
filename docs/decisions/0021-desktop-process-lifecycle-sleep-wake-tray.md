@@ -9,16 +9,16 @@
 
 ## 1. Context and Problem Statement
 
-Chat Bridge is packaged as an installable desktop application for macOS and Windows, designed for non-technical sales representatives operating on personal or corporate laptops ([Section 2, 7 [Feature I-5]](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L49-L57)).
+Chat Bridge is packaged as an installable desktop application for macOS and Windows, designed for non-technical sales representatives operating on personal or corporate laptops ([Section 2, 7 [Feature I-5]](../spec.md#L49-L57)).
 
 Laptops operate in an inherently unstable physical environment:
 1. **Window Close Expectations:** When a user clicks the window close button (`X` on Windows, red dot on macOS), they expect the bridge to continue syncing chats in the background. Terminating the process stops message delivery, violating user expectations.
-2. **Idle Memory Budget ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L305)):** The spec sets a strict **< 250 MB idle RSS** budget. A standard Electron application running Chromium renderer views continuously consumes 150–200 MB of RAM even when minimized, leaving minimal headroom during burst message arrivals ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L307)).
+2. **Idle Memory Budget ([Section 11](../spec.md#L305)):** The spec sets a strict **< 250 MB idle RSS** budget. A standard Electron application running Chromium renderer views continuously consumes 150–200 MB of RAM even when minimized, leaving minimal headroom during burst message arrivals ([Section 11](../spec.md#L307)).
 3. **OS Sleep and Wake Cycles (Lid Close):** When a user closes their laptop lid or the OS enters power suspension, active WebSocket connections to WhatsApp (`baileys`) and Zalo (`zca-js`) silently drop or become half-open sockets. Upon waking:
    - If the engine blindly writes to dead sockets, unhandled socket exceptions crash the engine.
-   - If the engine blindly initiates immediate simultaneous reconnection storms, WhatsApp and Zalo risk flagging or banning the rep's account for abnormal bot behavior ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L297)).
-4. **Data Integrity on Shutdown ([Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L296)):** *"A crash, a reboot or a closed laptop loses no message that reached the outbox."* When the OS shuts down, restarts, or user logs out, active SQLite transactions and WAL caches must be flushed cleanly without file corruption.
-5. **Zero Admin Rights Required ([Section 2, 13](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L55)):** Non-technical users cannot be asked to install root system services (`launchd` daemons or Windows Services requiring UAC elevation).
+   - If the engine blindly initiates immediate simultaneous reconnection storms, WhatsApp and Zalo risk flagging or banning the rep's account for abnormal bot behavior ([Section 11](../spec.md#L297)).
+4. **Data Integrity on Shutdown ([Section 11](../spec.md#L296)):** *"A crash, a reboot or a closed laptop loses no message that reached the outbox."* When the OS shuts down, restarts, or user logs out, active SQLite transactions and WAL caches must be flushed cleanly without file corruption.
+5. **Zero Admin Rights Required ([Section 2, 13](../spec.md#L55)):** Non-technical users cannot be asked to install root system services (`launchd` daemons or Windows Services requiring UAC elevation).
 
 We evaluated three architectural approaches:
 1. **Option 1: Standard Electron Monolith (Window Hide Only, No Power Management).**
@@ -59,17 +59,17 @@ We choose **Option 2: Lifecycle Orchestrator with PowerMonitor Sleep/Wake State 
 - **Window Lifecycle (`window-all-closed`):**
   - Overriding default Electron behavior: closing the main window (`close` event) does not terminate the app; instead, it prevents default and hides the window (`window.hide()`).
   - **Memory Reclamation:** Upon window hide, the Chromium web contents heap is destroyed/unloaded (`window.destroy()` or navigating to `about:blank` and clearing browser view cache). This drops the memory footprint of the running process from ~180 MB down to **40–60 MB RSS**, well below the 250 MB budget.
-  - When the user clicks the tray icon or application dock icon, a lightweight window is re-created and connected to the running local HTTP/SSE server ([ADR 0004](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0004-web-ui-transport-local-api.md)).
-- **Dynamic Tray Badging:** The tray icon reflects the tri-state health classification from [ADR 0013](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0013-health-engine-telemetry-sampler-watchdogs.md):
+  - When the user clicks the tray icon or application dock icon, a lightweight window is re-created and connected to the running local HTTP/SSE server ([ADR 0004](0004-web-ui-transport-local-api.md)).
+- **Dynamic Tray Badging:** The tray icon reflects the tri-state health classification from [ADR 0013](0013-health-engine-telemetry-sampler-watchdogs.md):
   - `OK` (All active connectors & sinks healthy): Default monochrome icon.
-  - `WARNING` (14-day WhatsApp warning, Zalo takeover, sink degraded): Amber dot badge + native OS notification ([Feature C-7](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L176)).
+  - `WARNING` (14-day WhatsApp warning, Zalo takeover, sink degraded): Amber dot badge + native OS notification ([Feature C-7](../spec.md#L176)).
   - `DOWN` (Connector disconnected or outbox stalled): Red alert icon.
 
 #### 2. Sleep/Wake Resiliency State Machine
 The `DesktopLifecycleService` binds directly to Electron's `powerMonitor` API:
 1. **`powerMonitor.on('suspend')`:**
    - Transitions engine state to `STATE_SUSPENDED`.
-   - Pauses all outbox queue workers ([ADR 0005](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0005-outbox-multi-queue-worker-pacing.md)), preventing outbound network requests while the network stack is shutting down.
+   - Pauses all outbox queue workers ([ADR 0005](0005-outbox-multi-queue-worker-pacing.md)), preventing outbound network requests while the network stack is shutting down.
    - Instructs WhatsApp (`baileys`) and Zalo (`zca-js`) watchdogs to pause heartbeat timers.
 2. **`powerMonitor.on('resume')`:**
    - Transitions engine state to `STATE_RESUMING`.

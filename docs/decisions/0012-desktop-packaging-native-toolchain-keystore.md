@@ -10,11 +10,11 @@
 ## 1. Context and Problem Statement
 
 Feature **I-5** and **C-3** in `docs/spec.md` require delivering an installable desktop application alongside a standalone developer CLI:
-1. **Zero-Terminal Installation ([Feature I-5](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L201), [Section 11](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L294)):** Non-technical sales reps must install the app on macOS and Windows via a simple double-click installer without touching a terminal, package manager, or build tool. The first release is an unsigned beta with a one-page installation guide for the "unknown developer" OS warning.
-2. **OS Keystore Integration ([Feature C-3](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L153)):** Master encryption keys must be sourced from native OS credential stores: Apple Keychain on macOS, DPAPI on Windows, and a `0600` permission keyfile on Linux for headless CI.
-3. **Dual Runtime Execution ([ADR 0001](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0001-desktop-shell-architecture.md)):** The exact same engine code must execute inside the Electron Desktop Shell and in the standalone Node.js CLI binary.
+1. **Zero-Terminal Installation ([Feature I-5](../spec.md#L201), [Section 11](../spec.md#L294)):** Non-technical sales reps must install the app on macOS and Windows via a simple double-click installer without touching a terminal, package manager, or build tool. The first release is an unsigned beta with a one-page installation guide for the "unknown developer" OS warning.
+2. **OS Keystore Integration ([Feature C-3](../spec.md#L153)):** Master encryption keys must be sourced from native OS credential stores: Apple Keychain on macOS, DPAPI on Windows, and a `0600` permission keyfile on Linux for headless CI.
+3. **Dual Runtime Execution ([ADR 0001](0001-desktop-shell-architecture.md)):** The exact same engine code must execute inside the Electron Desktop Shell and in the standalone Node.js CLI binary.
 4. **The Native Addon Fragility Trap:**
-   - The engine relies on `better-sqlite3` for high-throughput WAL-mode encrypted outbox storage ([ADR 0002](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0002-outbox-storage-envelope-encryption.md)).
+   - The engine relies on `better-sqlite3` for high-throughput WAL-mode encrypted outbox storage ([ADR 0002](0002-outbox-storage-envelope-encryption.md)).
    - Native C++ Node addons frequently suffer ABI version mismatches between Node and Electron, fail during cross-compilation across architectures (Apple Silicon `arm64` vs Intel `x64`), and require Microsoft Visual C++ Redistributable or Xcode command line tools if compiled from source.
    - Popular keystore libraries like `keytar` are deprecated/unmaintained and introduce native build failures in modern Electron environments.
 

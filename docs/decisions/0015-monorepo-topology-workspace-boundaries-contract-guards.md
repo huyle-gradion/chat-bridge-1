@@ -10,9 +10,9 @@
 ## 1. Context and Problem Statement
 
 Sections 4, 6, and 14 of `docs/spec.md` establish strict architectural boundaries and code hygiene rules:
-1. **Decoupled Three-Tier Architecture ([Section 4](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L88-L100)):** Sources, Engine, and Sinks must be completely decoupled. Sources and Sinks must **never** communicate directly with each other or bypass the Engine contracts ([Section 6](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L116-L147)).
-2. **Dual-Shell Consumption ([ADR 0001](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0001-desktop-shell-architecture.md)):** The exact same Engine and Provider modules must be imported by both the Electron Desktop Shell (`packages/desktop`) and the standalone CLI binary (`packages/cli`).
-3. **Mandatory Quality Guards ([Section 14](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L351-L358)):**
+1. **Decoupled Three-Tier Architecture ([Section 4](../spec.md#L88-L100)):** Sources, Engine, and Sinks must be completely decoupled. Sources and Sinks must **never** communicate directly with each other or bypass the Engine contracts ([Section 6](../spec.md#L116-L147)).
+2. **Dual-Shell Consumption ([ADR 0001](0001-desktop-shell-architecture.md)):** The exact same Engine and Provider modules must be imported by both the Electron Desktop Shell (`packages/desktop`) and the standalone CLI binary (`packages/cli`).
+3. **Mandatory Quality Guards ([Section 14](../spec.md#L351-L358)):**
    - **Zero import cycles** across the codebase.
    - **The Engine reaches sources and sinks ONLY through their contracts.**
    - **Zero dead code or unused exports.**
@@ -88,7 +88,7 @@ To guarantee that `@chat-bridge/engine` has zero compile-time or runtime depende
 
 ### 3. Automated Quality & Boundary Guards (`guards/`)
 
-In compliance with [Section 14](file:///Users/van.tran/Documents/dev/chat-bridge/docs/spec.md#L351-L358), automated check scripts are located in `guards/` and executed on every commit and CI pull request:
+In compliance with [Section 14](../spec.md#L351-L358), automated check scripts are located in `guards/` and executed on every commit and CI pull request:
 
 1. **`guards/no-cycles.ts` (Import Cycle Guard):**
    - Uses `dependency-cruiser` to statically analyze module imports.
@@ -98,7 +98,7 @@ In compliance with [Section 14](file:///Users/van.tran/Documents/dev/chat-bridge
    - Asserts that `packages/engine` contains **zero** imports from `@chat-bridge/source-*` or `@chat-bridge/sink-*`.
    - Asserts that no source imports any sink, and no sink imports any source.
 3. **`guards/plain-language.ts` (UX Guard):**
-   - AST linter scanning JSX/TSX in `packages/ui` for banned internal jargon ([ADR 0007](file:///Users/van.tran/Documents/dev/chat-bridge/docs/decisions/0007-frontend-stack-plain-language-guard.md)).
+   - AST linter scanning JSX/TSX in `packages/ui` for banned internal jargon ([ADR 0007](0007-frontend-stack-plain-language-guard.md)).
 4. **`guards/unused-exports.ts` (Dead Code Guard):**
    - Uses `knip` to assert zero dead code, zero unused exports, and zero unreferenced dependencies.
 
