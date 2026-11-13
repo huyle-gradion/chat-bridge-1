@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "issue": 29,
+  "title": "Archive sink writes forwarded messages to daily JSONL files (US-K1-01)",
+  "labels": [
+    "agent:plan-review"
+  ],
+  "runner": "antigravity-cli in docker (agy 1.5.5)",
+  "model": "gemini-3.8-flash-high",
+  "startedAt": "2026-11-13T04:04:16.904Z",
+  "finishedAt": "2026-11-13T04:06:45.633Z",
+  "outcome": "needs-human",
+  "phases": [
+    {
+      "phase": "green",
+      "passed": false,
+      "attempts": [
+        {
+          "attempt": 1,
+          "agentExitCode": 3,
+          "agentError": "Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 124h1m41s.",
+          "usage": {
+            "input": 555542,
+            "cachedInput": 441411,
+            "output": 5371,
+            "total": 560913,
+            "requests": 23
+          },
+          "toolCalls": {
+            "run_command": 10,
+            "read_file": 12,
+            "manage_task": 1
+          },
+          "gates": [],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": [],
+          "failure": "no-changes"
+        },
+        {
+          "attempt": 2,
+          "agentExitCode": 3,
+          "agentError": "Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 124h1m22s.",
+          "usage": {
+            "input": 23335,
+            "cachedInput": 0,
+            "output": 579,
+            "total": 23914,
+            "requests": 2
+          },
+          "toolCalls": {
+            "run_command": 2
+          },
+          "gates": [],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": [],
+          "failure": "no-changes"
+        },
+        {
+          "attempt": 3,
+          "agentExitCode": 3,
+          "agentError": "Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 124h1m15s.",
+          "usage": {
+            "input": 0,
+            "cachedInput": 0,
+            "output": 0,
+            "total": 0,
+            "requests": 1
+          },
+          "toolCalls": {},
+          "gates": [],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": [],
+          "failure": "no-changes"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input": 578877,
+    "cachedInput": 441411,
+    "output": 5950,
+    "total": 584827,
+    "requests": 26
+  },
+  "costUsd": 0.1585,
+  "caughtBy": [
+    "agent-error",
+    "agent-error",
+    "agent-error"
+  ],
+  "firstPass": false,
+  "stage": "build"
+}
