@@ -1,11 +1,13 @@
 import type { Message } from '@chat-bridge/types';
 
-/** Placeholder: throws until the day-file helpers are built. */
-export function dayFileName(_time: string): string | undefined {
-  throw new Error('not implemented');
+/** Name of the UTC-day file for an ISO time, or undefined if the time is invalid. */
+export function dayFileName(time: string): string | undefined {
+  const ms = Date.parse(time);
+  if (Number.isNaN(ms)) return undefined;
+  return `${new Date(ms).toISOString().slice(0, 10)}.jsonl`;
 }
 
-/** Placeholder: throws until the day-file helpers are built. */
-export function messageLine(_message: Message): string {
-  throw new Error('not implemented');
+/** One JSON line for a message, ending in a single newline. */
+export function messageLine(message: Message): string {
+  return `${JSON.stringify(message)}\n`;
 }
