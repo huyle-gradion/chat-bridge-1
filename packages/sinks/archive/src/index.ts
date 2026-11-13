@@ -1,1 +1,1 @@
-export {};
+export * from './archive-sink.js';
