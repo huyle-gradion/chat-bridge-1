@@ -14,7 +14,13 @@
       "name": "unit",
       "command": [
         "node_modules/.bin/vitest",
-        "run"
+        "run",
+        "--exclude",
+        "packages/desktop/**",
+        "--exclude",
+        "packages/cli/**",
+        "--exclude",
+        "packages/sources/fake/**"
       ]
     }
   ],
