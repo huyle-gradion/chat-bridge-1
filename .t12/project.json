@@ -53,5 +53,8 @@
     "adapter": "github-issues",
     "repo": "huyle-gradion/chat-bridge-1",
     "label": "factory"
+  },
+  "delivery": {
+    "adapter": "github"
   }
 }
