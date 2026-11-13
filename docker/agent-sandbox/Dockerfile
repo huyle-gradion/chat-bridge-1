@@ -16,3 +16,7 @@ RUN curl -fsSL https://antigravity.google/cli/install.sh -o /tmp/install.sh \
  && HOME=/tmp/agy-install bash /tmp/install.sh --dir /usr/local/bin \
  && rm -rf /tmp/install.sh /tmp/agy-install \
  && agy --version
+
+# Claude Code, for runner "claude-code". Same rule: rebuild on purpose to upgrade.
+RUN npm install --global @anthropic-ai/claude-code \
+ && claude --version
