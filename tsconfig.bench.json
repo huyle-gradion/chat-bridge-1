@@ -38,7 +38,11 @@
       "@chat-bridge/sink-archive": [
         "packages/sinks/archive/src/index.ts"
       ]
-    }
+    },
+    "types": [
+      "node",
+      "vitest/globals"
+    ]
   },
   "include": [
     "packages/*/src",
