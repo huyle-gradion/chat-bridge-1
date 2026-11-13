@@ -2,10 +2,25 @@
   "version": 1,
   "name": "chat-bridge-bench",
   "gates": [
-    {"name": "build", "command": ["node_modules/.bin/tsc", "--build"]},
-    {"name": "unit", "command": ["node_modules/.bin/vitest", "run"]}
+    {
+      "name": "typecheck",
+      "command": [
+        "node_modules/.bin/tsc",
+        "-p",
+        "tsconfig.bench.json"
+      ]
+    },
+    {
+      "name": "unit",
+      "command": [
+        "node_modules/.bin/vitest",
+        "run"
+      ]
+    }
   ],
-  "required_reviews": ["reviewer"],
+  "required_reviews": [
+    "reviewer"
+  ],
   "verify_deps": [
     "node_modules",
     "packages/cli/node_modules",
@@ -23,9 +38,14 @@
     "package.json",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
-    "tsconfig.json",
     "tsconfig.base.json",
+    "tsconfig.bench.json",
+    "tsconfig.json",
     "vitest.config.ts"
   ],
-  "intake": {"adapter": "github-issues", "repo": "huyle-gradion/chat-bridge-1", "label": "factory"}
+  "intake": {
+    "adapter": "github-issues",
+    "repo": "huyle-gradion/chat-bridge-1",
+    "label": "factory"
+  }
 }

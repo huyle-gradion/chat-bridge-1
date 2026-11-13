@@ -1,0 +1,52 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "@chat-bridge/types": [
+        "packages/types/src/index.ts"
+      ],
+      "@chat-bridge/testing": [
+        "packages/testing/src/index.ts"
+      ],
+      "@chat-bridge/testing/scenarios/scenario-builder.js": [
+        "packages/testing/src/scenarios/scenario-builder.ts"
+      ],
+      "@chat-bridge/engine": [
+        "packages/engine/src/index.ts"
+      ],
+      "@chat-bridge/cli": [
+        "packages/cli/src/index.ts"
+      ],
+      "@chat-bridge/source-fake": [
+        "packages/sources/fake/src/index.ts"
+      ],
+      "@chat-bridge/source-whatsapp": [
+        "packages/sources/whatsapp/src/index.ts"
+      ],
+      "@chat-bridge/source-zalo": [
+        "packages/sources/zalo/src/index.ts"
+      ],
+      "@chat-bridge/sink-margince": [
+        "packages/sinks/margince/src/index.ts"
+      ],
+      "@chat-bridge/sink-archive": [
+        "packages/sinks/archive/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "packages/*/src",
+    "packages/sources/*/src",
+    "packages/sinks/*/src"
+  ],
+  "exclude": [
+    "packages/testing/src/**/*.test.ts",
+    "packages/types/src/**/*.test.ts"
+  ]
+}
