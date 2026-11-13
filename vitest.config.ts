@@ -1,3 +1,5 @@
+import os from 'node:os';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
@@ -17,6 +19,8 @@ const workspacePackages: Record<string, string> = {
 };
 
 export default defineConfig({
+  // The verification cage mounts node_modules read-only; TMPDIR is writable.
+  cacheDir: path.join(os.tmpdir(), 'chat-bridge-vite'),
   resolve: {
     alias: [
       {
