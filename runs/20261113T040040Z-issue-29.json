@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "issue": 29,
+  "title": "Archive sink writes forwarded messages to daily JSONL files (US-K1-01)",
+  "labels": [
+    "agent:ready"
+  ],
+  "runner": "antigravity-cli in docker (agy 1.5.5)",
+  "model": "gemini-3.8-flash-high",
+  "startedAt": "2026-11-13T03:48:06.677Z",
+  "finishedAt": "2026-11-13T04:00:40.997Z",
+  "outcome": "plan-ready",
+  "phases": [
+    {
+      "phase": "red",
+      "passed": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "agentExitCode": 0,
+          "usage": {
+            "input": 8938948,
+            "cachedInput": 8616165,
+            "output": 35330,
+            "total": 8974278,
+            "requests": 103
+          },
+          "toolCalls": {
+            "read_file": 28,
+            "run_command": 37,
+            "manage_task": 34,
+            "write_file": 1,
+            "edit_file": 2
+          },
+          "gates": [
+            {
+              "name": "test",
+              "status": "fail",
+              "durationMs": 11947
+            }
+          ],
+          "protectedPathViolations": [],
+          "lockedTestEdits": [],
+          "outOfScopeFiles": []
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input": 8938948,
+    "cachedInput": 8616165,
+    "output": 35330,
+    "total": 8974278,
+    "requests": 103
+  },
+  "costUsd": 1.0208,
+  "caughtBy": [],
+  "firstPass": true,
+  "stage": "plan"
+}
