@@ -7,6 +7,7 @@
     { "path": "./packages/sources/whatsapp" },
     { "path": "./packages/sources/zalo" },
     { "path": "./packages/sinks/margince" },
+    { "path": "./packages/sinks/archive" },
     { "path": "./packages/engine" },
     { "path": "./packages/cli" },
     { "path": "./packages/desktop" }

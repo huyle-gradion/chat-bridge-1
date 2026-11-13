@@ -151,6 +151,25 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.5)(supports-color@7.2.0)
 
+  packages/sinks/archive:
+    dependencies:
+      '@chat-bridge/types':
+        specifier: workspace:*
+        version: link:../../types
+    devDependencies:
+      '@chat-bridge/testing':
+        specifier: workspace:*
+        version: link:../../testing
+      '@types/node':
+        specifier: ^22.10.1
+        version: 22.20.5
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.5)(supports-color@7.2.0)
+
   packages/sinks/margince:
     dependencies:
       '@chat-bridge/types':

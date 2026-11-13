@@ -1,6 +1,34 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
+// Tests import workspace packages from their source, so they run without a build step.
+const source = (path: string): string => fileURLToPath(new URL(path, import.meta.url));
+
+const workspacePackages: Record<string, string> = {
+  types: 'packages/types',
+  testing: 'packages/testing',
+  engine: 'packages/engine',
+  cli: 'packages/cli',
+  'source-fake': 'packages/sources/fake',
+  'source-whatsapp': 'packages/sources/whatsapp',
+  'source-zalo': 'packages/sources/zalo',
+  'sink-margince': 'packages/sinks/margince',
+  'sink-archive': 'packages/sinks/archive',
+};
+
 export default defineConfig({
+  resolve: {
+    alias: [
+      {
+        find: /^@chat-bridge\/testing\/scenarios\/scenario-builder\.js$/,
+        replacement: source('./packages/testing/src/scenarios/scenario-builder.ts'),
+      },
+      ...Object.entries(workspacePackages).map(([name, dir]) => ({
+        find: new RegExp(`^@chat-bridge/${name}$`),
+        replacement: source(`./${dir}/src/index.ts`),
+      })),
+    ],
+  },
   test: {
     globals: true,
     environment: 'node',
