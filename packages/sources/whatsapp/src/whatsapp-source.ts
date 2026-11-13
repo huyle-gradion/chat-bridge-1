@@ -253,10 +253,34 @@ export class WhatsAppSource implements SourceContract {
     const isGroup = remoteJid.endsWith('@g.us');
     const rawParticipant = raw.key.participant ?? (raw.key.fromMe ? this.account : remoteJid);
 
+    const cleanParticipantJid = stripDeviceSuffix(rawParticipant);
+    const bareParticipant = cleanParticipantJid.replace(/@s\.whatsapp\.net|@lid/g, '');
+
     // Identity mapping resolution: resolve LID to primary phone
-    const resolvedAccountId = this.identityStore.resolve(rawParticipant.replace(/@s\.whatsapp\.net|@lid/g, ''));
+    const resolvedAccountId = this.identityStore.resolve(bareParticipant);
     const displayName =
-      this.identityStore.getDisplayName(rawParticipant) ?? raw.pushName ?? resolvedAccountId;
+      this.identityStore.getDisplayName(cleanParticipantJid) ??
+      this.identityStore.getDisplayName(bareParticipant) ??
+      raw.pushName ??
+      resolvedAccountId;
+
+    let senderPhone: string | undefined;
+
+    if (raw.key.fromMe) {
+      senderPhone = formatE164(stripDeviceSuffix(this.account));
+    } else if (rawParticipant.includes('@lid') || cleanParticipantJid.endsWith('@lid')) {
+      const mapped =
+        this.identityStore.getMapping(cleanParticipantJid) ??
+        this.identityStore.getMapping(bareParticipant);
+      senderPhone = mapped ? formatE164(mapped) : undefined;
+    } else if (rawParticipant.includes('@s.whatsapp.net') || cleanParticipantJid.endsWith('@s.whatsapp.net')) {
+      senderPhone = formatE164(bareParticipant);
+    } else {
+      const mapped =
+        this.identityStore.getMapping(cleanParticipantJid) ??
+        this.identityStore.getMapping(bareParticipant);
+      senderPhone = mapped ? formatE164(mapped) : undefined;
+    }
 
     const bodyText = this.extractMessageText(raw.message);
     const messageTime = new Date(raw.messageTimestamp * 1000).toISOString();
@@ -273,6 +297,7 @@ export class WhatsAppSource implements SourceContract {
       from: {
         accountId: resolvedAccountId,
         displayName,
+        ...(senderPhone !== undefined ? { phone: senderPhone } : {}),
       },
       to: [
         {
@@ -331,4 +356,28 @@ export class WhatsAppSource implements SourceContract {
 
     return '';
   }
+}
+
+function stripDeviceSuffix(jid: string): string {
+  const atIndex = jid.indexOf('@');
+  if (atIndex === -1) {
+    const colonIndex = jid.indexOf(':');
+    return colonIndex === -1 ? jid : jid.substring(0, colonIndex);
+  }
+  const user = jid.substring(0, atIndex);
+  const server = jid.substring(atIndex);
+  const colonIndex = user.indexOf(':');
+  const cleanUser = colonIndex === -1 ? user : user.substring(0, colonIndex);
+  return `${cleanUser}${server}`;
+}
+
+function formatE164(phone?: string | undefined): string | undefined {
+  if (!phone) {
+    return undefined;
+  }
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) {
+    return undefined;
+  }
+  return `+${digits}`;
 }
